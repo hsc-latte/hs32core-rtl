@@ -47,6 +47,8 @@ module hs32_cpu (
     input   wire[4:0] vec,          // Interrupt vector
     input   wire nmi                // Non maskable interrupt
 );
+    parameter IMUL = 0;
+    parameter BARREL_SHIFTER = 0;
     parameter PREFETCH_SIZE = 3; // Depth of 2^PREFETCH_SIZE instructions
 
     wire flush;
@@ -93,7 +95,9 @@ module hs32_cpu (
     wire [3:0]  regopd_e;
     wire [1:0]  bank_e;
     wire [15:0] ctlsig_e;
-    hs32_decode DECODE(
+    hs32_decode #(
+        .IMUL(IMUL)
+    ) DECODE (
         .clk(i_clk), .reset(reset | flush),
         // Fetch
         .instf(inst_d), .reqd(req_d), .rdyd(rdy_d),
@@ -112,7 +116,10 @@ module hs32_cpu (
     );
 
     wire req_ed, rdy_ed;
-    hs32_exec EXEC(
+    hs32_exec #(
+        .IMUL(IMUL),
+        .BARREL_SHIFTER(BARREL_SHIFTER)
+    ) EXEC(
         .clk(i_clk), .reset(reset),
         // Pipeline controller
         .newpc(newpc), .flush(flush),

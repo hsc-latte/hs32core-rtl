@@ -66,6 +66,8 @@ module hs32_decode (
     // Interrupts
     output wire [23:0] int_line
 );
+    parameter IMUL = 0;
+
     reg [31:0] instd;
     assign reqd = rdye;
 
@@ -97,7 +99,8 @@ module hs32_decode (
     assign int_line[22] = `HS32_IMM == 22 && activate ? 1 : 0;
     assign int_line[23] = `HS32_IMM == 23 && activate ? 1 : 0;
 
-    always @(posedge clk)
+    // Generate IMUL
+    generate always @(posedge clk)
     if(reset) begin
         reqe <= 0;
         activate <= 0;
@@ -328,9 +331,8 @@ module hs32_decode (
                     ctlsig <= { 13'b01_1_011_0000_010, `HS32_SHIFTDIR, 1'b0 };
                 end
 
-`ifdef IMUL
                 /* MUL     Rd <- Rm * sh(Rn) */
-                `HS32_MUL: begin
+                `HS32_MUL: if(IMUL) begin
                     aluop <= `HS32A_MUL;
                     shift <= `HS32_SHIFT;
                     imm <= `HS32_NULLI;     // [IGNORED]
@@ -339,8 +341,9 @@ module hs32_decode (
                     rn <= `HS32_RN;
                     bank <= `HS32_BANK;     // [IGNORED] Bank
                     ctlsig <= { 13'b01_0_011_0000_010, `HS32_SHIFTDIR, 1'b0 };    // SHIFTDIR
+                end else begin
+                    // TODO: Error
                 end
-`endif
 
                 /**************/
                 /*  MATH IMM  */
@@ -613,5 +616,5 @@ module hs32_decode (
                 end
             endcase
         end
-    end
+    end; endgenerate
 endmodule

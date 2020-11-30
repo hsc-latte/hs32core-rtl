@@ -31,22 +31,27 @@ module hs32_alu (
     input  wire [3:0] i_fl, // nzcv in
     output wire [3:0] o_fl  // nzcv out
 );
+    parameter IMUL = 0;
+    
     // Assign output
     wire carry;
-    assign { carry, o_r } =
-        (i_op == `HS32A_ADD) ? i_a + i_b :
-        (i_op == `HS32A_SUB) ? { 1'b0, i_a } - { 1'b0, i_b } :
-        (i_op == `HS32A_AND) ? { i_fl[1], i_a & i_b } :
-        (i_op == `HS32A_AND) ? { i_fl[1], i_a | i_b } :
-        (i_op == `HS32A_XOR) ? { i_fl[1], i_a ^ i_b } :
-        (i_op == `HS32A_BIC) ? { i_fl[1], i_a & ~i_b } :
-        (i_op == `HS32A_ADC) ? i_a + i_b + { 31'b0, i_fl[1] } :
-        (i_op == `HS32A_SBC) ? { 1'b0, i_a } - { 1'b0, i_b } - {32'b0, i_fl[1] } :
-`ifdef IMUL
-        (i_op == `HS32A_MUL) ? i_a * i_b :
-`endif
-        { i_fl[1], i_b };
-    
+    generate
+        assign { carry, o_r } =
+            (i_op == `HS32A_ADD) ? i_a + i_b :
+            (i_op == `HS32A_SUB) ? { 1'b0, i_a } - { 1'b0, i_b } :
+            (i_op == `HS32A_AND) ? { i_fl[1], i_a & i_b } :
+            (i_op == `HS32A_AND) ? { i_fl[1], i_a | i_b } :
+            (i_op == `HS32A_XOR) ? { i_fl[1], i_a ^ i_b } :
+            (i_op == `HS32A_BIC) ? { i_fl[1], i_a & ~i_b } :
+            (i_op == `HS32A_ADC) ? i_a + i_b + { 31'b0, i_fl[1] } :
+            (i_op == `HS32A_SBC) ? { 1'b0, i_a } - { 1'b0, i_b } - {32'b0, i_fl[1] } :
+
+            // Generate IMUL
+            (i_op == `HS32A_MUL && IMUL) ? i_a * i_b :
+
+            { i_fl[1], i_b };
+    endgenerate
+
     // Compute output flags
     assign o_fl[3] = o_r[31] == 1 && (i_op == `HS32A_SUB);
     assign o_fl[2] = ~(|o_r);

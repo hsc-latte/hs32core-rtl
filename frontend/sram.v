@@ -20,6 +20,8 @@ module ext_sram (
     output  reg bhe,
     output  reg isout
 );
+    parameter SRAM_LATCH_LAZY = 1;
+
     `define B0 7:0
     `define B1 15:8
     `define B2 23:16
@@ -45,8 +47,9 @@ module ext_sram (
 
     assign ble = !(mask[1] | !rw);
 
+    // Generate SRAM_LATCH_LAZY
     // For waveforms and cycle names, see CPU.md
-    always @(posedge clk)
+    generate always @(posedge clk)
     if(reset) begin
         state   <= 0;
         mask    <= 0;
@@ -75,9 +78,9 @@ module ext_sram (
             // BLE is active low and NOT inverted on the output
             dout    <= { ble, addr[31:17] };
             we      <= rw;
-`ifdef SRAM_LATCH_LAZY
-            hasinit <= 1;
-`endif
+            if(SRAM_LATCH_LAZY) begin
+                hasinit <= 1;
+            end
         end
         // TW (wait 1 cycle)
         3'b010: begin
@@ -146,5 +149,5 @@ module ext_sram (
         end
         // So verilator doesn't complain
         default: begin end
-    endcase
+    endcase; endgenerate
 endmodule

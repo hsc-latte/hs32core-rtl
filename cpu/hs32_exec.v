@@ -59,6 +59,9 @@ module hs32_exec (
     input   wire [4:0] code,    // Interrupt vector
     output  reg  iack           // Interrupt acknowledge
 );
+    parameter IMUL = 0;
+    parameter BARREL_SHIFTER = 0;
+
     // Assign ready signal (only when IDLE)
     assign rdy = state == `IDLE;
 
@@ -138,17 +141,19 @@ module hs32_exec (
         state == `IDLE ?
             (`CTL_d == `CTL_d_dt_ma ? dtrm : aluout)
         : aluout;
-`ifdef BARREL_SHIFTER
-    // Barrel shifter
-    assign ibus2_sh =
-        shift == 0 ? ibus2 :
-        `CTL_d == `CTL_D_shl ? ibus2 << shift :
-        `CTL_d == `CTL_D_shr ? ibus2 >> shift :
-        `CTL_d == `CTL_D_ssr ? ibus2 >>> shift :
-        ibus2 << shift | ibus2 >> (32-shift);
-`else
-    assign ibus2_sh = ibus2;
-`endif
+    // Generate barrel shifter
+    generate
+        if(BARREL_SHIFTER) begin
+            assign ibus2_sh =
+                shift == 0 ? ibus2 :
+                `CTL_d == `CTL_D_shl ? ibus2 << shift :
+                `CTL_d == `CTL_D_shr ? ibus2 >> shift :
+                `CTL_d == `CTL_D_ssr ? ibus2 >>> shift :
+                ibus2 << shift | ibus2 >> (32-shift);
+        end else begin
+            assign ibus2_sh = ibus2;
+        end
+    endgenerate
 
     //===============================//
     // FSM
@@ -402,7 +407,9 @@ module hs32_exec (
     wire [31:0] aluout;
     wire [3:0] alu_nzcv, alu_nzcv_out;
     assign alu_nzcv = `CTL_f ? alu_nzcv_out : flags[31:28];
-    hs32_alu alu (
+    hs32_alu #(
+        .IMUL(IMUL)
+    ) alu (
         .i_a(`CTL_r ? ibus2_sh : ibus1),
         .i_b(`CTL_r ? ibus1 : ibus2_sh),
         .i_op(aluop), .o_r(aluout),
