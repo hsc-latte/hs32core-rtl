@@ -1,5 +1,3 @@
-`define MPRJ_IO_PADS 38
-
 module hs32_user_proj #(
     parameter BITS = 32
 )(
