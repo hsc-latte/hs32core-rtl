@@ -63,6 +63,7 @@
 `define TM2         7
 `define TW2         8
 `define INT         9
+`define DIE         10
 
 // MCR defines current machine mode
 `define MCR_USR     mcr_s[2]

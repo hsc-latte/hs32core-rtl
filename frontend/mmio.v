@@ -42,11 +42,10 @@ module mmio(
 
     // Interrupt controller
     input   wire[23:0] interrupts,  // Interrupt lines
-    input   wire iack,              // Interrupt acknowledge
     output  wire[31:0] handler,     // ISR address
     output  wire intrq,             // Request interrupt
     output  wire[4:0] vec,          // Interrupt vector
-    output  wire nmi                // Non maskable interrupt
+    output  wire nmi               // Non maskable interrupt
 
     // TODO: Expose AICT Entries
     // (Input and output)
@@ -57,64 +56,37 @@ module mmio(
     reg[31:0] aict[25:0];
 
     // Check if there's interrupt(s)
-    assign intrq = |interrupts && ~iack;
+    assign intrq = |interrupts;
 
     // NMI
-    assign nmi = interrupts[0] ||interrupts[1];
+    assign nmi = interrupts[0] || interrupts[1];
 
     // Interrupt Priority
     // LSB gets higher priority
-    always @(*) begin
-        if (interrupts[0])
-            vec = 5'd0;
-        else if (interrupts[1])
-            vec = 5'd1;
-        else if (interrupts[2])
-            vec = 5'd2;
-        else if (interrupts[3])
-            vec = 5'd3;
-        else if (interrupts[4])
-            vec = 5'd4;
-        else if (interrupts[5])
-            vec = 5'd5;
-        else if (interrupts[6])
-            vec = 5'd6;
-        else if (interrupts[7])
-            vec = 5'd7;
-        else if (interrupts[8])
-            vec = 5'd8;
-        else if (interrupts[9])
-            vec = 5'd9;
-        else if (interrupts[10])
-            vec = 5'd10;
-        else if (interrupts[11])
-            vec = 5'd11;
-        else if (interrupts[12])
-            vec = 5'd12;
-        else if (interrupts[13])
-            vec = 5'd13;
-        else if (interrupts[14])
-            vec = 5'd14;
-        else if (interrupts[15])
-            vec = 5'd15;
-        else if (interrupts[16])
-            vec = 5'd16;
-        else if (interrupts[17])
-            vec = 5'd17;
-        else if (interrupts[18])
-            vec = 5'd18;
-        else if (interrupts[19])
-            vec = 5'd19;
-        else if (interrupts[20])
-            vec = 5'd20;
-        else if (interrupts[21])
-            vec = 5'd21;
-        else if (interrupts[22])
-            vec = 5'd22;
-        else if (interrupts[23])
-            vec = 5'd23;
-    end
-
+    assign vec =
+        interrupts[0] ? 0 :
+        interrupts[1] ? 1 :
+        interrupts[2] ? 2 :
+        interrupts[3] ? 3 :
+        interrupts[4] ? 4 :
+        interrupts[5] ? 5 :
+        interrupts[6] ? 6 :
+        interrupts[7] ? 7 :
+        interrupts[8] ? 8 :
+        interrupts[9] ? 9 :
+        interrupts[10] ? 10 :
+        interrupts[11] ? 11 :
+        interrupts[12] ? 12 :
+        interrupts[13] ? 13 :
+        interrupts[14] ? 14 :
+        interrupts[15] ? 15 :
+        interrupts[16] ? 16 :
+        interrupts[17] ? 17 :
+        interrupts[18] ? 18 :
+        interrupts[19] ? 19 :
+        interrupts[20] ? 20 :
+        interrupts[21] ? 21 :
+        interrupts[22] ? 22 : 23;
     assign handler = aict[vec + 1];
 
     // Write ready
@@ -126,7 +98,8 @@ module mmio(
 
     // Calculate the aict index from the address
     wire[4:0] aict_idx;
-    assign aict_idx = 5'((addr-aict[0]) >> 2);
+    wire[27:0] __unused___;
+    assign {__unused___, aict_idx } = ((addr-aict[0]) >> 2);
 
     // Multiplex aict entry and sram signals
     // Ready is 1 only when reading

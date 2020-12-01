@@ -45,8 +45,8 @@ module hs32_decode (
     input reset,                // Reset
 
     // Fetch
-    input   wire [31:0] instf,  // Next instruction
-    output  wire reqd,          // Valid
+    input   wire [31:0] instd,  // Next instruction
+    output  reg  reqd,          // Valid
     input   wire rdyd,          // Ready
 
     // Execute
@@ -60,7 +60,7 @@ module hs32_decode (
     output  reg  [15:0] ctlsig, // Control signals
 
     // Execute pipeline logic
-    output reg reqe,
+    output wire reqe,
     input  wire rdye,
 
     // Interrupts
@@ -68,59 +68,85 @@ module hs32_decode (
 );
     parameter IMUL = 0;
 
-    reg [31:0] instd;
-    assign reqd = rdye;
-
-    reg activate;
+    reg intrq;
     reg intloop;
+    reg invalid;
+    reg reqel;
 
-    assign int_line[0]  = `HS32_IMM == 0  && activate ? 1 : 0;
-    assign int_line[1]  = `HS32_IMM == 1  && activate ? 1 : 0;
-    assign int_line[2]  = `HS32_IMM == 2  && activate ? 1 : 0;
-    assign int_line[3]  = `HS32_IMM == 3  && activate ? 1 : 0;
-    assign int_line[4]  = `HS32_IMM == 4  && activate ? 1 : 0;
-    assign int_line[5]  = `HS32_IMM == 5  && activate ? 1 : 0;
-    assign int_line[6]  = `HS32_IMM == 6  && activate ? 1 : 0;
-    assign int_line[7]  = `HS32_IMM == 7  && activate ? 1 : 0;
-    assign int_line[8]  = `HS32_IMM == 8  && activate ? 1 : 0;
-    assign int_line[9]  = `HS32_IMM == 9  && activate ? 1 : 0;
-    assign int_line[10] = `HS32_IMM == 10 && activate ? 1 : 0;
-    assign int_line[11] = `HS32_IMM == 11 && activate ? 1 : 0;
-    assign int_line[12] = `HS32_IMM == 12 && activate ? 1 : 0;
-    assign int_line[13] = `HS32_IMM == 13 && activate ? 1 : 0;
-    assign int_line[14] = `HS32_IMM == 14 && activate ? 1 : 0;
-    assign int_line[15] = `HS32_IMM == 15 && activate ? 1 : 0;
-    assign int_line[16] = `HS32_IMM == 16 && activate ? 1 : 0;
-    assign int_line[17] = `HS32_IMM == 17 && activate ? 1 : 0;
-    assign int_line[18] = `HS32_IMM == 18 && activate ? 1 : 0;
-    assign int_line[19] = `HS32_IMM == 19 && activate ? 1 : 0;
-    assign int_line[20] = `HS32_IMM == 20 && activate ? 1 : 0;
-    assign int_line[21] = `HS32_IMM == 21 && activate ? 1 : 0;
-    assign int_line[22] = `HS32_IMM == 22 && activate ? 1 : 0;
-    assign int_line[23] = `HS32_IMM == 23 && activate ? 1 : 0;
+    assign reqe = !intloop && reqel;
+
+    assign int_line[0]  = (imm == 0  && intrq) || invalid ? 1 : 0;
+    assign int_line[1]  = imm == 1  && intrq ? 1 : 0;
+    assign int_line[2]  = imm == 2  && intrq ? 1 : 0;
+    assign int_line[3]  = imm == 3  && intrq ? 1 : 0;
+    assign int_line[4]  = imm == 4  && intrq ? 1 : 0;
+    assign int_line[5]  = imm == 5  && intrq ? 1 : 0;
+    assign int_line[6]  = imm == 6  && intrq ? 1 : 0;
+    assign int_line[7]  = imm == 7  && intrq ? 1 : 0;
+    assign int_line[8]  = imm == 8  && intrq ? 1 : 0;
+    assign int_line[9]  = imm == 9  && intrq ? 1 : 0;
+    assign int_line[10] = imm == 10 && intrq ? 1 : 0;
+    assign int_line[11] = imm == 11 && intrq ? 1 : 0;
+    assign int_line[12] = imm == 12 && intrq ? 1 : 0;
+    assign int_line[13] = imm == 13 && intrq ? 1 : 0;
+    assign int_line[14] = imm == 14 && intrq ? 1 : 0;
+    assign int_line[15] = imm == 15 && intrq ? 1 : 0;
+    assign int_line[16] = imm == 16 && intrq ? 1 : 0;
+    assign int_line[17] = imm == 17 && intrq ? 1 : 0;
+    assign int_line[18] = imm == 18 && intrq ? 1 : 0;
+    assign int_line[19] = imm == 19 && intrq ? 1 : 0;
+    assign int_line[20] = imm == 20 && intrq ? 1 : 0;
+    assign int_line[21] = imm == 21 && intrq ? 1 : 0;
+    assign int_line[22] = imm == 22 && intrq ? 1 : 0;
+    assign int_line[23] = imm == 23 && intrq ? 1 : 0;
+
+    reg full;
+
+    always @(posedge clk)
+    if(reset) begin
+        reqd <= 0;
+        reqel <= 0;
+        full <= 0;
+    end else if(!intloop) begin
+        if(!full) begin
+            if(reqd && rdyd) begin
+                full <= 1;
+                reqd <= 0;
+                reqel <= 1;
+            end else begin
+                reqd <= 1;
+                reqel <= 0;
+            end
+        end else begin
+            if(reqe && rdye) begin
+                full <= 0;
+                reqd <= 1;
+                reqel <= 0;
+            end else begin
+                reqd <= 0;
+                reqel <= 1;
+            end
+        end
+    end else begin
+        reqd <= 0;
+        reqel <= 0;
+    end
 
     // Generate IMUL
     generate always @(posedge clk)
     if(reset) begin
-        reqe <= 0;
-        activate <= 0;
+        invalid <= 0;
+        intrq <= 0;
+        intloop <= 0;
     end else begin
-        if(rdyd && reqd) begin
-            instd   <= instf;
-            ctlsig  <= 0;
-            aluop   <= 0;
-            shift   <= 0;
-            imm     <= 0;
-            rd      <= 0;
-            rm      <= 0;
-            rn      <= 0;
-            bank    <= 0;
-            activate <= 0;
+        // Reset interrupts
+        if(intrq || invalid) begin
+            intrq <= 0;
+            invalid <= 0;
         end
+
         /* If Ready Received */
-        if (rdye) begin
-            reqe <= 1;
-            
+        if (reqd && rdyd) begin
             /* ISA OP Code Decoding */
 
             /*************************************************************************/
@@ -131,8 +157,8 @@ module hs32_decode (
             /*************************************************************************/
             casez (instd[31:24])
                 default: begin
-                    activate <= 1;
-                    //int <= 24'h000002;
+                    invalid <= 1;
+                    intloop <= 1;
                 end
 
                 /**************/
@@ -228,7 +254,7 @@ module hs32_decode (
                 end
                 /* MOV     Rd <- sh(Rn) */
                 `HS32_MOVN: begin
-                    aluop <= `HS32A_MOV;     // MOV
+                    aluop <= `HS32A_MOV;    // MOV
                     shift <= `HS32_SHIFT;   // Shift
                     imm <= `HS32_NULLI;     // [IGNORED] Imm
                     rd <= `HS32_RD;
@@ -239,8 +265,8 @@ module hs32_decode (
                 end
                 /* MOV     Rd <- Rm_b */
                 `HS32_MOV: begin
-                    aluop <= `HS32A_MOV;     // MOV
-                    shift <= 5'd0;   // [IGNORED] Shift
+                    aluop <= `HS32A_MOV;    // MOV
+                    shift <= 5'd0;          // [IGNORED] Shift
                     imm <= `HS32_NULLI;     // [ZERO] Imm
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -250,8 +276,8 @@ module hs32_decode (
                 end
                 /* MOV     Rd_b <- Rm */
                 `HS32_MOVR: begin
-                    aluop <= `HS32A_MOV;     // MOV
-                    shift <= 5'd0;   // [IGNORED] Shift
+                    aluop <= `HS32A_MOV;    // MOV
+                    shift <= 5'd0;          // [IGNORED] Shift
                     imm <= `HS32_NULLI;     // [ZERO] Imm
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -342,7 +368,8 @@ module hs32_decode (
                     bank <= `HS32_BANK;     // [IGNORED] Bank
                     ctlsig <= { 13'b01_0_011_0000_010, `HS32_SHIFTDIR, 1'b0 };    // SHIFTDIR
                 end else begin
-                    // TODO: Error
+                    invalid <= 1;
+                    intloop <= 1;
                 end
 
                 /**************/
@@ -596,25 +623,12 @@ module hs32_decode (
 
                 /* INT     imm8 */
                 `HS32_INT: begin
-                    if (!intloop) begin
-                        activate <= 1;
-                        intloop <= 1;
-                        aluop <= `HS32A_NOP;
-                        shift <= `HS32_SHIFT;
-                        imm <= `HS32_IMM;
-                        rd <= `HS32_RD;
-                        rm <= `HS32_RM;
-                        rn <= `HS32_RN;
-                        bank <= `HS32_BANK;     // [IGNORED] Bank
-                        ctlsig <= { 13'b00_0_000_0000_100, `HS32_SHIFTDIR, 1'b0 };
-                    end
-                    else begin
-                        if (`HS32_IMM == 0) begin
-                            intloop <= 0;
-                        end
-                    end
+                    intrq <= 1;
+                    intloop <= 1;
+                    imm <= `HS32_IMM;
                 end
             endcase
         end
-    end; endgenerate
+    end
+    endgenerate
 endmodule

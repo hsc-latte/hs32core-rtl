@@ -57,7 +57,12 @@ module hs32_exec (
     input   wire nmi,           // Non maskable?
     input   wire [31:0] isr,    // Interrupt handler
     input   wire [4:0] code,    // Interrupt vector
-    output  reg  iack           // Interrupt acknowledge
+    output  reg  iack,          // Interrupt acknowledge
+    output  reg  int_inval,
+
+    // Misc
+    output reg fault,
+    output wire userbit
 );
     parameter IMUL = 0;
     parameter BARREL_SHIFTER = 0;
@@ -90,6 +95,7 @@ module hs32_exec (
     reg  [31:0] mar, dtw;
     assign addr = mar;
     assign dtwm = dtw;
+    assign userbit = `MCR_USR;
     
     //===============================//
     // Banked registers control logic
@@ -164,17 +170,22 @@ module hs32_exec (
     always @(posedge clk)
     if(reset) begin
         state <= 0;
+        fault <= 0;
     end else case(state)
         `IDLE: if(int_latch || intrq) begin
             state <= `INT;
+            if(`IS_INT)
+                fault <= 1;
         end else if(req) begin
             state <=
+                (`IS_USR && (`BANK_S || `BANK_I || `BANK_F)) ? `DIE :
                 // All states (except branch) start with `TR1
                 (`CTL_b == 0) ? `TR1 :
                 // Decide whether to branch or not
                 (flags[{ 1'b0, `CTL_b }] == 1'b1) ? `TB1 :
                 // No branch taken
                 `IDLE;
+            int_inval <= (`IS_USR && (`BANK_S || `BANK_I || `BANK_F));
         end
         `TB1: begin
             state <= `TR1;
@@ -217,6 +228,12 @@ module hs32_exec (
         end
         `INT: begin
             state <= `TB2;
+            fault <= 0;
+        end
+        `DIE: begin
+            int_inval <= 0;
+            if(int_latch || intrq)
+                state <= `IDLE;
         end
     endcase
 

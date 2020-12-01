@@ -28,7 +28,6 @@ Type    Wire Format
 
 I-Type  oooo_oooo_dddd_mmmm iiii_iiii_iiii_iiii
 R-Type  oooo_oooo_dddd_mmmm nnnn_ssss_sDDb_bxxx
-J-Type  oooo_oooo_dddd_iiii iiii_iiii_iiii_iiii
 
 * Bank field is only applicable to Rm variants of the R-Type
   MOV instructions varient 001 and 010, and will specify the

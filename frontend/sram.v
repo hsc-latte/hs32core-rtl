@@ -149,5 +149,6 @@ module ext_sram (
         end
         // So verilator doesn't complain
         default: begin end
-    endcase; endgenerate
+    endcase
+    endgenerate
 endmodule

@@ -1,21 +1,21 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Tue Nov 24 03:39:27 2020
+[*] Mon Nov 30 23:11:13 2020
 [*]
 [dumpfile] "c:\Users\Kevin\Desktop\Projects\fpga\hsc\rtl\build\dump.vcd"
-[dumpfile_mtime] "Tue Nov 24 03:38:33 2020"
-[dumpfile_size] 11163
+[dumpfile_mtime] "Mon Nov 30 23:09:04 2020"
+[dumpfile_size] 10745
 [savefile] "C:\Users\Kevin\Desktop\Projects\fpga\hsc\rtl\bench\rtl\tb_exec_decode.gtkw"
 [timestart] 0
 [size] 1536 801
-[pos] -1 -1
+[pos] -165 -165
 *-3.675658 5 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_decode.
 [treeopen] tb_decode.exec.
 [sst_width] 197
-[signals_width] 269
+[signals_width] 279
 [sst_expanded] 1
-[sst_vpaned_height] 328
+[sst_vpaned_height] 473
 @28
 tb_decode.exec.clk
 tb_decode.exec.reset
@@ -25,7 +25,6 @@ tb_decode.exec.rdy
 tb_decode.exec.state[3:0]
 @200
 -
-@201
 -Execute
 @c00200
 -Module I/O
@@ -59,8 +58,6 @@ tb_decode.exec.rw_mem
 -
 @28
 tb_decode.exec.intrq
-@22
-tb_decode.exec.addi[31:0]
 @1401200
 -Module I/O
 @c00200
@@ -151,7 +148,7 @@ tb_decode.exec.regfile_u.\regs[15][31:0]
 @200
 -
 -Decode
-@c00200
+@800200
 -Decode
 @28
 tb_decode.decode.clk
@@ -160,11 +157,13 @@ tb_decode.decode.reqd
 tb_decode.decode.rdyd
 tb_decode.decode.reqe
 tb_decode.decode.rdye
+tb_decode.decode.full
+@23
+tb_decode.decode.int_line[23:0]
 @200
 -
 @22
 tb_decode.decode.instd[31:0]
-tb_decode.decode.instf[31:0]
 @200
 -
 @22
@@ -178,7 +177,7 @@ tb_decode.decode.rd[3:0]
 tb_decode.decode.rm[3:0]
 tb_decode.decode.rn[3:0]
 tb_decode.decode.shift[4:0]
-@1401200
+@1000200
 -Decode
 [pattern_trace] 1
 [pattern_trace] 0

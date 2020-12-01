@@ -1,7 +1,5 @@
-`define BARREL_SHIFTER
-`define IMUL
-
 `include "frontend/sram.v"
+`include "frontend/mmio.v"
 `include "cpu/hs32_cpu.v"
 
 module main (
@@ -45,9 +43,6 @@ module main (
     assign ALE1 = ale1_neg;
     assign BHE_N = !bhe;
 
-    wire ready, valid, rw;
-    wire [31:0] addr, dtw, dtr;
-
     // Power on reset
     reg por, state;
     initial por = 0;
@@ -60,19 +55,57 @@ module main (
         else por <= 0;
     end
 
-    hs32_cpu cpu(
+    // CPU control signals
+    wire ready, valid, rw;
+    wire [31:0] addr, dtw, dtr;
+    wire [23:0] intt;
+    wire [4:0] ivec;
+    wire [31:0] isr;
+    wire irq, nmi;
+    
+    hs32_cpu #(
+        .IMUL(1), .BARREL_SHIFTER(1), .PREFETCH_SIZE(3)
+    ) cpu(
         .i_clk(CLK), .reset(por),
         // External interface
         .addr(addr), .rw(rw),
         .din(dtr), .dout(dtw),
-        .valid(valid), .ready(ready)
+        .valid(valid), .ready(ready),
+        // Interrupt controller
+        .interrupts(intt),
+        .iack(),
+        .handler(isr),
+        .intrq(irq),
+        .vec(ivec),
+        .nmi(nmi),
+        // Misc
+        .fault(), .userbit()
     );
 
-    ext_sram sram (
+    // MMIO control signals
+    mmio mmio_unit(
+        .clk(CLK), .reset(por),
+        // CPU
+        .valid(valid), .ready(ready),
+        .addr(addr), .dtw(dtw), .dtr(dtr), .rw(rw),
+        // SRAM
+        .sval(svalid), .srdy(sready),
+        .saddr(saddr), .sdtw(sdtw), .sdtr(sdtr), .srw(srw),
+        // Interrupt controller
+        .interrupts(intt), .handler(isr), .intrq(irq), .vec(ivec), .nmi(nmi)
+    );
+
+    // SRAM control signals
+    wire sready, svalid, srw;
+    wire [31:0] saddr, sdtw, sdtr;
+
+    ext_sram #(
+        .SRAM_LATCH_LAZY(1)
+    ) sram (
         .clk(CLK), .reset(por),
         // Memory requests
-        .ready(ready), .valid(valid), .rw(rw),
-        .addri(addr), .dtw(dtw), .dtr(dtr),
+        .ready(sready), .valid(svalid), .rw(srw),
+        .addri(saddr), .dtw(sdtw), .dtr(sdtr),
         // External IO interface, active >> HIGH <<
         .din(data_in), .dout(data_out),
         .we(we), .oe(oe), .oe_negedge(oe_neg),

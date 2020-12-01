@@ -45,7 +45,11 @@ module hs32_cpu (
     input   wire[31:0] handler,     // ISR address
     input   wire intrq,             // Request interrupt
     input   wire[4:0] vec,          // Interrupt vector
-    input   wire nmi                // Non maskable interrupt
+    input   wire nmi,               // Non maskable interrupt
+
+    // Misc
+    output wire userbit,
+    output wire fault
 );
     parameter IMUL = 0;
     parameter BARREL_SHIFTER = 0;
@@ -95,12 +99,17 @@ module hs32_cpu (
     wire [3:0]  regopd_e;
     wire [1:0]  bank_e;
     wire [15:0] ctlsig_e;
+    wire [23:0] int_line;
+
+    // OR the interrupt line from the exec and decode
+    assign interrupts = int_line | { 22'b0, int_inval, 1'b0 };
+
     hs32_decode #(
         .IMUL(IMUL)
     ) DECODE (
         .clk(i_clk), .reset(reset | flush),
         // Fetch
-        .instf(inst_d), .reqd(req_d), .rdyd(rdy_d),
+        .instd(inst_d), .reqd(req_d), .rdyd(rdy_d),
 
         // Execute
         .reqe(req_ed),
@@ -112,10 +121,12 @@ module hs32_cpu (
         .rm(regsrc_e),
         .rn(regopd_e),
         .ctlsig(ctlsig_e),
-        .bank(bank_e)
+        .bank(bank_e),
+        .int_line(int_line)
     );
 
     wire req_ed, rdy_ed;
+    wire int_inval;
     hs32_exec #(
         .IMUL(IMUL),
         .BARREL_SHIFTER(BARREL_SHIFTER)
@@ -146,6 +157,13 @@ module hs32_cpu (
         .isr(handler),
         .code(vec),
         .iack(iack),
-        .nmi(nmi)
+        .nmi(nmi),
+
+        // Misc
+        .userbit(userbit),
+        .fault(fault),
+
+        // Privilege violation
+        .int_inval(int_inval)
     );
 endmodule

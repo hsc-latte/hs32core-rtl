@@ -18,9 +18,6 @@
  * @date   Created on November 23 2020, 10:26 PM
  */
 
-`define IMUL
-`define BARREL_SHIFTER
-
 `ifdef SIM
 `include "cpu/hs32_aluops.v"
 `include "cpu/hs32_exec.v"
@@ -30,6 +27,8 @@
 `timescale 1ns / 1ns
 module tb_decode;
     parameter PERIOD = 2;
+    parameter IMUL = 0;
+    parameter BARREL_SHIFTER = 1;
 
     reg[31:0] instd = 32'h4200_1000;
 
@@ -67,7 +66,10 @@ module tb_decode;
         $finish;
     end
 
-    hs32_exec exec(
+    hs32_exec #(
+        .IMUL(IMUL),
+        .BARREL_SHIFTER(BARREL_SHIFTER)
+    ) exec(
         .clk(clk),
         .reset(reset),
         .req(reqe),
@@ -96,10 +98,12 @@ module tb_decode;
         .isr(0)
     );
 
-    hs32_decode decode(
+    hs32_decode #(
+        .IMUL(IMUL)
+    ) decode(
         .clk(clk),
         .reset(reset),
-        .instf(instd),
+        .instd(instd),
         .reqd(),
         .rdyd(1'b1),
         .aluop(aluop),
