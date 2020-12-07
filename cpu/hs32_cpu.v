@@ -36,8 +36,8 @@ module hs32_cpu (
     output  wire rw,
     input   wire[31:0] din,
     output  wire[31:0] dout,
-    output  wire valid,
-    input   wire ready,
+    output  wire stb,
+    input   wire ack,
 
     // Interrupt controller
     output  wire[23:0] interrupts,  // Interrupt lines
@@ -49,32 +49,33 @@ module hs32_cpu (
 
     // Misc
     output wire userbit,
-    output wire fault
+    output wire fault,
+    output wire flush
 );
     parameter IMUL = 0;
     parameter BARREL_SHIFTER = 0;
     parameter PREFETCH_SIZE = 3; // Depth of 2^PREFETCH_SIZE instructions
-
-    wire flush;
+    
     wire[31:0] newpc;
 
     wire[31:0] addr_e, dtr_e, dtw_e;
-    wire req_e, rdy_e, rw_e;
+    wire stb_e, ack_e, stl_e, rw_e;
 
     wire[31:0] addr_f, dtr_f;
-    wire req_f, rdy_f;
+    wire stb_f, ack_f, stl_f;
     hs32_mem MEM(
+        .clk(i_clk), .reset(reset | flush),
         // External interface
         .addr(addr), .rw(rw), .din(din), .dout(dout),
-        .valid(valid), .ready(ready),
+        .stb(stb), .ack(ack),
         
         // Channel 0 (Execute)
         .addr0(addr_e), .dtr0(dtr_e), .dtw0(dtw_e),
-        .rw0(rw_e), .req0(req_e), .rdy0(rdy_e),
+        .rw0(rw_e), .stb0(stb_e), .ack0(ack_e), .stl0(stl_e),
 
         // Channel 1 (Fetch)
         .addr1(addr_f), .dtr1(dtr_f), .dtw1(0),
-        .rw1(0), .req1(req_f), .rdy1(rdy_f)
+        .rw1(1'b0), .stb1(stb_f), .ack1(ack_f), .stl1(stl_f)
     );
 
     wire[31:0] inst_d;
@@ -84,21 +85,23 @@ module hs32_cpu (
     ) FETCH(
         .clk(i_clk),
         // Memory arbiter interface
-        .addr(addr_f), .dtr(dtr_f), .reqm(req_f), .rdym(rdy_f),
+        .addr(addr_f), .dtr(dtr_f),
+        .stbm(stb_f), .ackm(ack_f), .stlm(stl_f),
         // Decode
         .instd(inst_d), .reqd(req_d), .rdyd(rdy_d),
         // Pipeline controller
         .newpc(newpc), .flush(flush | reset)
     );
 
-    wire [3:0]  aluop_e;
-    wire [4:0]  shift_e;
-    wire [15:0] imm_e;
-    wire [3:0]  regdst_e;
-    wire [3:0]  regsrc_e;
-    wire [3:0]  regopd_e;
-    wire [1:0]  bank_e;
-    wire [15:0] ctlsig_e;
+    // wire [3:0]  aluop_e;
+    // wire [4:0]  shift_e;
+    // wire [15:0] imm_e;
+    // wire [3:0]  regdst_e;
+    // wire [3:0]  regsrc_e;
+    // wire [3:0]  regopd_e;
+    // wire [1:0]  bank_e;
+    // wire [15:0] ctlsig_e;
+    wire [54:0] control;
     wire [23:0] int_line;
 
     // OR the interrupt line from the exec and decode
@@ -114,14 +117,15 @@ module hs32_cpu (
         // Execute
         .reqe(req_ed),
         .rdye(rdy_ed),
-        .aluop(aluop_e),
-        .imm(imm_e),
-        .shift(shift_e),
-        .rd(regdst_e),
-        .rm(regsrc_e),
-        .rn(regopd_e),
-        .ctlsig(ctlsig_e),
-        .bank(bank_e),
+        .control(control),
+        // .aluop(aluop_e),
+        // .imm(imm_e),
+        // .shift(shift_e),
+        // .rd(regdst_e),
+        // .rm(regsrc_e),
+        // .rn(regopd_e),
+        // .ctlsig(ctlsig_e),
+        // .bank(bank_e),
         .int_line(int_line)
     );
 
@@ -137,17 +141,18 @@ module hs32_cpu (
         .req(req_ed), .rdy(rdy_ed),
 
         // Decode
-        .aluop(aluop_e),
-        .imm(imm_e),
-        .shift(shift_e),
-        .rd(regdst_e),
-        .rm(regsrc_e),
-        .rn(regopd_e),
-        .ctlsig(ctlsig_e),
-        .bank(bank_e),
+        .control(control),
+        // .aluop(aluop_e),
+        // .imm(imm_e),
+        // .shift(shift_e),
+        // .rd(regdst_e),
+        // .rm(regsrc_e),
+        // .rn(regopd_e),
+        // .ctlsig(ctlsig_e),
+        // .bank(bank_e),
         
         // Memory arbiter interface
-        .reqm(req_e), .rdym(rdy_e),
+        .stbm(stb_e), .ackm(ack_e), .stlm(stl_e),
         .addr(addr_e),
         .dtrm(dtr_e), .dtwm(dtw_e),
         .rw_mem(rw_e),

@@ -25,56 +25,69 @@
 // them in an internal queue/fifo.
 
 module hs32_fetch (
-    input clk,                       // 12 MHz Clock
+    input clk,                      // 12 MHz Clock
 
     // Memory arbiter interface
-    output  wire [31:0] addr,        // Address
-    input   wire [31:0] dtr,         // Data input
-    output  wire reqm,               // Valid address
-    input   wire rdym,               // Valid data
+    output  wire [31:0] addr,       // Address
+    input   wire [31:0] dtr,        // Data input
+    output  reg  stbm,              // Valid address
+    input   wire ackm,              // Valid data
+    input   wire stlm,              // Stall
 
     // Decode
-    output  wire [31:0] instd,       // Next instruction
-    input   wire reqd,               // Valid input
-    output  wire rdyd,               // Valid output
+    output  reg [31:0] instd,       // Next instruction
+    output  reg  reqd,              // Valid input
+    input   wire rdyd,              // Valid output
 
     // Pipeline controller
-    input   wire[31:0] newpc,        // New program counter
-    input   wire flush               // Flush
+    input   wire[31:0] newpc,       // New program counter
+    input   wire flush              // Flush
 );
     parameter PREFETCH_SIZE = 2;
 
     // Program counter and init values
     reg[31:0] pc;
-    reg reset_latch;
-    wire reset;
-    assign reset = reset_latch || flush;
 
     // Fifo Logic, fill is size of fifo
-    reg [PREFETCH_SIZE:0] wp, rp, fill;
-    reg full;
+    reg [PREFETCH_SIZE:0] wp, rp, fill, fill_next;
+    wire[PREFETCH_SIZE:0] wp_next;
+    assign wp_next = wp + 1;
+    reg full, full_next;
     reg[31:0] fifo[(1<<PREFETCH_SIZE)-1:0];
     integer i; // For flush
 
+`ifdef SIM
+    initial begin
+        for(i = 0; i < (1<<PREFETCH_SIZE); i++)
+            $dumpvars(1, fifo[i]);
+    end
+`endif
+
     // Combinatorial logic to update the values of fill and full
     always @(*) fill = wp - rp;
+    always @(*) fill_next = wp_next - rp;
     always @(*) full = fill == { 1'b1, {(PREFETCH_SIZE) {1'b0}} };
+    always @(*) full_next = fill_next == { 1'b1, {(PREFETCH_SIZE) {1'b0}} };
 
-    // Decode ready signals
-    assign instd = fifo[rp[PREFETCH_SIZE-1:0]];
-    assign rdyd = !reset && fill > 1;
-    
     // Decode request
     always @(posedge clk)
     if(flush) begin
         rp <= 0;
-    end else if(reqd && rdyd) begin
-        rp <= rp + 1;
+        reqd <= 0;
+    end else begin
+        if(rdyd && !(flush) && fill > 1) begin
+            reqd <= 1;
+            instd <= fifo[rp[PREFETCH_SIZE-1:0]];
+            rp <= rp+1;
+        end else begin
+            reqd <= 0;
+        end
     end
 
     // Memory request
     assign addr = pc;
-    assign reqm = !full;
+    // Internal busy state
+    reg r_bsy;
     always @(posedge clk)
     if(flush) begin
         pc <= newpc;
@@ -82,18 +95,29 @@ module hs32_fetch (
         for(i = 0; i < (1<<PREFETCH_SIZE); i++) begin
             fifo[i] <= 0;
         end
-    end else if(!reset && rdym && reqm) begin
-        fifo[wp[PREFETCH_SIZE-1:0]] <= dtr;
-        pc <= pc+4;
-        wp <= wp+1;
-    end
-
-    // Reset logic
-    always @(posedge clk)
-    if(reset && rdym) begin
-        reset_latch <= 0;
-    end else if(flush) begin
-        reset_latch <= flush;
+        stbm <= 0;
+        r_bsy <= 0;
+    end else begin
+        // Not busy and able to request
+        if(!r_bsy && !full) begin
+            stbm <= 1; // Request pulse
+            r_bsy <= 1;
+        end else if(r_bsy) begin
+            stbm <= 0;
+            if(stlm) begin
+                r_bsy <= 0;
+            end else if(ackm) begin
+                pc <= pc+4;
+                fifo[wp[PREFETCH_SIZE-1:0]] <= dtr;
+                wp <= wp_next;
+                r_bsy <= 0;
+                if(!full_next) begin
+                    stbm <= 1;
+                    r_bsy <= 1;
+                end
+            end
+        end
+        // IDLE
     end
 
 `ifdef FORMAL

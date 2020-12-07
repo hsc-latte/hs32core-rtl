@@ -27,13 +27,12 @@ module soc_bram (
 );
     parameter addr_width = 8;
     parameter data_width = 8;
+    parameter data = "";
 
     reg[data_width-1:0] mem[(1<<addr_width)-1:0];
     
-    integer i;
     initial begin
-        for(i = 0; i < (1<<addr_width); i++)
-            mem[i] = 0;
+        $readmemh(data, mem);
     end
 
     always @(posedge clk) begin

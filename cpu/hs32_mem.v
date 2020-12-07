@@ -26,80 +26,83 @@
 // Note: channel0 gets priority over channel1
 // When channel0 wants access, it drives req0 HIGH.
 // When channel1 wants access, it drives req1 HIGH.
-//
-// IMA will then drive the respective rdy high
-// when the operation is COMPLETE. The module on each channel
-// only needs to wait for the rdy signals.
-//
-// >> MODULE OUTPUTS MUST REMAIN VALID UNTIL THE RDY SIGNAL <<
 
 module hs32_mem (
+    input wire clk,
+    input wire reset,
+
     // External interface
     output  wire[31:0] addr,    // Output address
     output  wire rw,            // Read/write signal
     input   wire[31:0] din,     // Data input from memory
     output  wire[31:0] dout,    // Data output to memory
-    output  wire valid,         // Valid outputs
-    input   wire ready,          // Operation completed (valid din too)
+    output  wire stb,           // Valid outputs
+    input   wire ack,           // Operation completed (valid din too)
 
     // Channel 0
     input   wire[31:0] addr0,   // Address request from
     input   wire rw0,           // Read/write signal from
     output  wire[31:0] dtr0,    // Data to read
     input   wire[31:0] dtw0,    // Data to write
-    input   wire req0,          // Valid input
-    output  wire rdy0,          // Valid output
+    input   wire stb0,          // Valid input
+    output  wire ack0,          // Valid output
+    output  reg  stl0,          // Rejected request (stall)
 
     // Channel 1
     input   wire[31:0] addr1,   // Address request from
     input   wire rw1,           // Read/write signal from
     output  wire[31:0] dtr1,    // Data to read
     input   wire[31:0] dtw1,    // Data to write
-    input   wire req1,          // Valid input
-    output  wire rdy1           // Valid output
+    input   wire stb1,          // Valid input
+    output  wire ack1,          // Valid output
+    output  reg  stl1
 );
-    // LUT Count:
-    // 32 addr + 32 dout + 1 rw + 1 ack0 + 1 ack1 + 1 valid
-    // Total, 68 LUT4s, 1 layer of logic
-    assign addr = req0 ? addr0 : addr1;
-    assign rw   = req0 ? rw0 : rw1;
+    // Assign inputs
     assign dtr0 = din;
     assign dtr1 = din;
-    assign dout = req0 ? dtw0 : dtw1;
-    assign valid = req0 || req1;
-    assign rdy0 = req0 ? ready : 0;
-    assign rdy1 = req0 ? 0 : (req1 ? ready : 0);
+    // Not busy, then go with stb. Else, go with r_sel
+    assign addr = (stl0 || stl1) ?
+        r_sel ? addr1 : addr0 :
+        stb0 ? addr0 : addr1;
+    assign dout = (stl0 || stl1) ?
+        r_sel ? dtw1 : dtw0 :
+        stb0 ? dtw0 : dtw1;
+    assign rw = (stl0 || stl1) ?
+        r_sel ? rw1 : rw0 :
+        stb0 ? rw0 : rw1;
+    // If busy, stb should be low. Else, go with stb
+    assign stb = (stl0 || stl1) ? 0 : stb0 | stb1;
+    // Only if busy, go with r_sel, otherwise, 0
+    assign ack0 = (stl0 || stl1) ? r_sel ? 0 : ack : 0;
+    assign ack1 = (stl0 || stl1) ? r_sel ? ack : 0 : 0;
 
-`ifdef FORMAL
-    // 1. Assume conditions to make proof simple
-    always @(*) begin
-        assume(addr0 != addr1);
-        assume(dtw0 != dtw1);
-    end
-
-    // 2. Assume a request will always be responded to
-    always @(*)
-    if(valid)
-        assume property(s_eventually ready);
-    
-    // 3. Invariant of priority
-    // - req0 will always have priority
-    // - If ready is set, only one of rdy0 and rdy1 will be active
-    always @(*) begin
-        if(req0) begin
-            assert(dout == dtw0);
-            assert(addr == addr0);
-            assert(rw == rw0);
-            assert(ready == rdy0);
-            assert(valid);
-        end else if(req1) begin
-            assert(dout == dtw1);
-            assert(addr == addr1);
-            assert(rw == rw1);
-            assert(ready == rdy1);
-            assert(valid);
+    // Selected active channel
+    reg r_sel;
+    always @(posedge clk)
+    if(reset) begin
+        stl0 <= 0;
+        stl1 <= 0;
+        r_sel <= 0;
+    end else begin
+        // Request and not busy
+        if((stb0 || stb1) && !(stl0 || stl1)) begin
+            if(stb0) begin
+                stl0 <= 0;
+                stl1 <= 1;
+                r_sel <= 0;
+            end else begin
+                stl0 <= 1;
+                stl1 <= 0;
+                r_sel <= 1;
+            end
+        // Currently busy
+        end else if(stl0 || stl1) begin
+            // If ack, then deal with it
+            if(ack) begin
+                stl0 <= 0;
+                stl1 <= 0;
+            end
         end
-        assert(!(rdy0 && rdy1));
+        // IDLE
     end
-`endif
 endmodule

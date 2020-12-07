@@ -43,7 +43,7 @@ module main (
     end
 
     hs32_cpu cpu(
-        .clk(CLK), .reset(por),
+        .i_clk(CLK), .reset(por),
         // External interface
         .addr(addr), .rw(rw),
         .din(dread), .dout(dwrite),

@@ -1,0 +1,310 @@
+[*]
+[*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
+[*] Mon Dec 07 08:47:00 2020
+[*]
+[dumpfile] "c:\Users\Kevin\Desktop\Projects\fpga\hsc\rtl\build\dump.vcd"
+[dumpfile_mtime] "Mon Dec 07 08:46:52 2020"
+[dumpfile_size] 57222
+[savefile] "C:\Users\Kevin\Desktop\Projects\fpga\hsc\rtl\bench\rtl\tb_soc.gtkw"
+[timestart] 0
+[size] 1536 801
+[pos] -1 -1
+*-5.000000 48 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_soc.
+[treeopen] tb_soc.bram_ctl.
+[treeopen] tb_soc.cpu.
+[treeopen] tb_soc.cpu.EXEC.
+[sst_width] 272
+[signals_width] 262
+[sst_expanded] 1
+[sst_vpaned_height] 473
+@28
+tb_soc.cpu.i_clk
+tb_soc.cpu.reset
+@200
+-
+@c00200
+-BRAM
+@28
+tb_soc.bram_ctl.i_clk
+tb_soc.bram_ctl.i_reset
+tb_soc.bram_ctl.i_stb
+tb_soc.bram_ctl.o_ack
+@22
+tb_soc.bram_ctl.i_addr[7:0]
+tb_soc.bram_ctl.i_dwrite[31:0]
+tb_soc.bram_ctl.o_dread[31:0]
+@28
+tb_soc.bram_ctl.i_rw
+@1401200
+-BRAM
+@c00200
+-Mem
+@28
+tb_soc.cpu.MEM.clk
+tb_soc.cpu.MEM.reset
+tb_soc.cpu.MEM.r_sel
+@200
+-
+@28
+tb_soc.cpu.MEM.stb
+tb_soc.cpu.MEM.ack
+tb_soc.cpu.MEM.rw
+@22
+tb_soc.cpu.MEM.addr[31:0]
+tb_soc.cpu.MEM.din[31:0]
+tb_soc.cpu.MEM.dout[31:0]
+@200
+-
+@28
+tb_soc.cpu.MEM.stb0
+tb_soc.cpu.MEM.ack0
+tb_soc.cpu.MEM.stl0
+tb_soc.cpu.MEM.rw0
+@22
+tb_soc.cpu.MEM.addr0[31:0]
+tb_soc.cpu.MEM.dtr0[31:0]
+tb_soc.cpu.MEM.dtw0[31:0]
+@200
+-
+@28
+tb_soc.cpu.MEM.stb1
+tb_soc.cpu.MEM.ack1
+tb_soc.cpu.MEM.stl1
+tb_soc.cpu.MEM.rw1
+@22
+tb_soc.cpu.MEM.addr1[31:0]
+tb_soc.cpu.MEM.dtr1[31:0]
+tb_soc.cpu.MEM.dtw1[31:0]
+@1401200
+-Mem
+@c00200
+-Fetch
+@28
+tb_soc.cpu.FETCH.clk
+tb_soc.cpu.FETCH.flush
+[color] 3
+tb_soc.cpu.FETCH.stbm
+[color] 3
+tb_soc.cpu.FETCH.ackm
+[color] 3
+tb_soc.cpu.FETCH.stlm
+tb_soc.cpu.FETCH.r_bsy
+@22
+[color] 3
+tb_soc.cpu.FETCH.pc[31:0]
+@200
+-
+@28
+[color] 3
+tb_soc.cpu.FETCH.reqd
+[color] 3
+tb_soc.cpu.FETCH.rdyd
+@22
+tb_soc.cpu.FETCH.addr[31:0]
+tb_soc.cpu.FETCH.dtr[31:0]
+tb_soc.cpu.FETCH.instd[31:0]
+tb_soc.cpu.FETCH.newpc[31:0]
+@200
+-
+@28
+tb_soc.cpu.FETCH.full
+@22
+tb_soc.cpu.FETCH.fill[3:0]
+tb_soc.cpu.FETCH.rp[3:0]
+tb_soc.cpu.FETCH.wp[3:0]
+@1401200
+-Fetch
+@c00200
+-Queue
+@22
+tb_soc.cpu.FETCH.\fifo[0][31:0]
+tb_soc.cpu.FETCH.\fifo[1][31:0]
+tb_soc.cpu.FETCH.\fifo[2][31:0]
+tb_soc.cpu.FETCH.\fifo[3][31:0]
+tb_soc.cpu.FETCH.\fifo[4][31:0]
+tb_soc.cpu.FETCH.\fifo[5][31:0]
+tb_soc.cpu.FETCH.\fifo[6][31:0]
+tb_soc.cpu.FETCH.\fifo[7][31:0]
+@1401200
+-Queue
+@800200
+-Decode
+@28
+tb_soc.cpu.DECODE.clk
+tb_soc.cpu.DECODE.reset
+@22
+tb_soc.cpu.DECODE.int_line[23:0]
+@28
+[color] 3
+tb_soc.cpu.DECODE.reqd
+[color] 3
+tb_soc.cpu.DECODE.rdyd
+@200
+-
+@28
+[color] 3
+tb_soc.cpu.DECODE.reqe
+[color] 3
+tb_soc.cpu.DECODE.rdye
+tb_soc.cpu.DECODE.full
+@200
+-
+@22
+tb_soc.cpu.DECODE.instd[31:0]
+@200
+-
+@22
+tb_soc.cpu.DECODE.aluop[3:0]
+@28
+tb_soc.cpu.DECODE.bank[1:0]
+@22
+tb_soc.cpu.DECODE.ctlsig[15:0]
+tb_soc.cpu.DECODE.imm[15:0]
+tb_soc.cpu.DECODE.rd[3:0]
+tb_soc.cpu.DECODE.rm[3:0]
+tb_soc.cpu.DECODE.rn[3:0]
+tb_soc.cpu.DECODE.shift[4:0]
+@1000200
+-Decode
+@c00200
+-Execute
+@28
+tb_soc.cpu.EXEC.clk
+[color] 3
+tb_soc.cpu.EXEC.req
+[color] 3
+tb_soc.cpu.EXEC.rdy
+@22
+tb_soc.cpu.EXEC.state[3:0]
+@c00200
+-Module I/O
+@28
+tb_soc.cpu.EXEC.flush
+@22
+tb_soc.cpu.EXEC.newpc[31:0]
+@200
+-
+@22
+tb_soc.cpu.EXEC.aluop[3:0]
+tb_soc.cpu.EXEC.shift[4:0]
+tb_soc.cpu.EXEC.imm[15:0]
+tb_soc.cpu.EXEC.rd[3:0]
+tb_soc.cpu.EXEC.rm[3:0]
+tb_soc.cpu.EXEC.rn[3:0]
+@28
+tb_soc.cpu.EXEC.ctlsig[15:0]
+tb_soc.cpu.EXEC.bank[1:0]
+@200
+-
+@28
+[color] 3
+tb_soc.cpu.EXEC.stbm
+[color] 3
+tb_soc.cpu.EXEC.ackm
+[color] 3
+tb_soc.cpu.EXEC.stlm
+@22
+tb_soc.cpu.EXEC.addr[31:0]
+tb_soc.cpu.EXEC.dtrm[31:0]
+tb_soc.cpu.EXEC.dtwm[31:0]
+@28
+[color] 3
+tb_soc.cpu.EXEC.rw_mem
+@200
+-
+@28
+tb_soc.cpu.EXEC.intrq
+@1401200
+-Module I/O
+@800200
+-Internal Bus
+@22
+tb_soc.cpu.EXEC.ibus1[31:0]
+tb_soc.cpu.EXEC.ibus2[31:0]
+tb_soc.cpu.EXEC.obus[31:0]
+tb_soc.cpu.EXEC.aluout[31:0]
+@1000200
+-Internal Bus
+@c00200
+-Special Registers
+@22
+tb_soc.cpu.EXEC.r_dtrm[31:0]
+tb_soc.cpu.EXEC.dtw[31:0]
+tb_soc.cpu.EXEC.mar[31:0]
+tb_soc.cpu.EXEC.pc_s[31:0]
+tb_soc.cpu.EXEC.pc_u[31:0]
+tb_soc.cpu.EXEC.lr_i[31:0]
+tb_soc.cpu.EXEC.sp_i[31:0]
+tb_soc.cpu.EXEC.mcr_s[31:0]
+@1401200
+-Special Registers
+@c00200
+-Register Control
+@28
+tb_soc.cpu.EXEC.reg_we
+tb_soc.cpu.EXEC.reg_we_s
+tb_soc.cpu.EXEC.reg_we_u
+@200
+-
+@22
+tb_soc.cpu.EXEC.regadra[3:0]
+tb_soc.cpu.EXEC.regouta[31:0]
+tb_soc.cpu.EXEC.regouta_s[31:0]
+tb_soc.cpu.EXEC.regouta_u[31:0]
+@200
+-
+@22
+tb_soc.cpu.EXEC.regadrb[3:0]
+tb_soc.cpu.EXEC.regoutb[31:0]
+tb_soc.cpu.EXEC.regoutb_s[31:0]
+tb_soc.cpu.EXEC.regoutb_u[31:0]
+@1401200
+-Register Control
+@c00200
+-Supervisor Regfile
+@22
+tb_soc.cpu.EXEC.regfile_s.wadr[3:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[0][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[1][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[2][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[3][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[4][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[5][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[6][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[7][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[8][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[9][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[10][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[11][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[12][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[13][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[14][31:0]
+tb_soc.cpu.EXEC.regfile_s.\regs[15][31:0]
+@1401200
+-Supervisor Regfile
+@c00200
+-User Regfile
+@22
+tb_soc.cpu.EXEC.regfile_u.wadr[3:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[0][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[1][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[2][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[3][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[4][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[5][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[6][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[7][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[8][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[9][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[10][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[11][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[12][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[13][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[14][31:0]
+tb_soc.cpu.EXEC.regfile_u.\regs[15][31:0]
+@1401200
+-User Regfile
+-Execute
+[pattern_trace] 1
+[pattern_trace] 0

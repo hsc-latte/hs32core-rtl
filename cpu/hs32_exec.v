@@ -1,18 +1,18 @@
 /**
  * Copyright (c) 2020 The HSC Core Authors
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * @file   hs32_exec.v
  * @author Kevin Dai <kevindai02@outlook.com>
  * @date   Created on October 24 2020, 10:33 PM
@@ -35,21 +35,23 @@ module hs32_exec (
     output  reg flush,          // Flush
 
     // Decode
-    input   wire [3:0]  aluop,  // ALU Operation
-    input   wire [4:0]  shift,  // 5-bit shift
-    input   wire [15:0] imm,    // Immediate value
-    input   wire [3:0]  rd,     // Register Destination Rd
-    input   wire [3:0]  rm,     // Register Source Rm
-    input   wire [3:0]  rn,     // Register Operand Rn
-    input   wire [15:0] ctlsig, // Control signals
-    input   wire [1:0]  bank,   // Input bank
+    input wire [54:0] control,
+    // input   wire [3:0]  aluop,  // ALU Operation
+    // input   wire [4:0]  shift,  // 5-bit shift
+    // input   wire [15:0] imm,    // Immediate value
+    // input   wire [3:0]  rd,     // Register Destination Rd
+    // input   wire [3:0]  rm,     // Register Source Rm
+    // input   wire [3:0]  rn,     // Register Operand Rn
+    // input   wire [15:0] ctlsig, // Control signals
+    // input   wire [1:0]  bank,   // Input bank
 
     // Memory arbiter interface
     output  wire [31:0] addr,   // Address
     input   wire [31:0] dtrm,   // Data input
     output  wire [31:0] dtwm,   // Data output
-    output  reg  reqm,          // Valid address
-    input   wire rdym,          // Valid data
+    output  reg  stbm,          // Valid address
+    input   wire ackm,          // Valid data
+    input   wire stlm,          // Request rejected
     output  reg  rw_mem,        // Read write
 
     // Interrupts
@@ -69,6 +71,31 @@ module hs32_exec (
 
     // Assign ready signal (only when IDLE)
     assign rdy = state == `IDLE;
+    reg r_bsy;
+
+    //===============================//
+    // Input control signals
+    //===============================//
+    
+    wire[54:0]  ctl;
+    reg [54:0]  r_control;
+    wire[4:0]   shift;
+    wire[15:0]  imm, ctlsig;
+    wire[3:0]   aluop, rd, rm, rn;
+    wire[1:0]   bank;
+    assign ctl = state == `IDLE ? control : r_control;
+    assign aluop = ctl[54:51];
+    assign shift = ctl[50:46];
+    assign imm = ctl[45:30];
+    assign rd = ctl[29:26];
+    assign rm = ctl[25:22];
+    assign rn = ctl[21:18];
+    assign bank = ctl[17:16];
+    assign ctlsig = ctl[15:0];
+
+    //===============================//
+    // Interrupts
+    //===============================//
 
     // Latch incoming interrupts
     reg int_latch;
@@ -92,11 +119,11 @@ module hs32_exec (
 
     wire [31:0] ibus1, ibus2, ibus2_sh, obus;
     // Memory address and data registers
-    reg  [31:0] mar, dtw;
+    reg  [31:0] mar, dtw, r_obus, r_dtrm;
     assign addr = mar;
     assign dtwm = dtw;
     assign userbit = `MCR_USR;
-    
+
     //===============================//
     // Banked registers control logic
     //===============================//
@@ -143,9 +170,9 @@ module hs32_exec (
          `CTL_s == `CTL_s_mix ||
          `CTL_s == `CTL_s_mid) ? { 16'b0, imm } : regoutb;
     assign obus =
-        state == `TW2 ? dtrm :
+        state == `TW2 ? r_dtrm :
         state == `IDLE ?
-            (`CTL_d == `CTL_d_dt_ma ? dtrm : aluout)
+            (`CTL_d == `CTL_d_dt_ma ? r_dtrm : aluout)
         : aluout;
     // Generate barrel shifter
     generate
@@ -177,6 +204,7 @@ module hs32_exec (
             if(`IS_INT)
                 fault <= 1;
         end else if(req) begin
+            r_control <= control;
             state <=
                 (`IS_USR && (`BANK_S || `BANK_I || `BANK_F)) ? `DIE :
                 // All states (except branch) start with `TR1
@@ -212,13 +240,14 @@ module hs32_exec (
             state <= `TM2;
         end
         `TM1: begin
-            if(reqm && rdym)
+            if(r_bsy && ackm) begin
                 state <= `TW2;
-            else
+            end else begin
                 state <= `TM1;
+            end
         end
         `TM2: begin
-            if(reqm && rdym)
+            if(r_bsy && ackm)
                 state <= `IDLE;
             else
                 state <= `TM2;
@@ -235,6 +264,7 @@ module hs32_exec (
             if(int_latch || intrq)
                 state <= `IDLE;
         end
+        `TID: state <= `IDLE;
     endcase
 
     //===============================//
@@ -250,34 +280,53 @@ module hs32_exec (
         reg_we <= 0;
     end else case(state)
         `IDLE: begin
-            reg_we <= 0;
+            // Determine if reg_we will go high
+            reg_we <=
+                `CTL_s != `CTL_s_mid &&
+                `CTL_s != `CTL_s_mnd &&
+                `CTL_d == `CTL_d_rd &&
+                !(rd == 4'b1100 && !`IS_SUP) &&
+                !(rd == 4'b1101 && !(`IS_INT || (!`IS_USR && `BANK_I))) &&
+                !(rd == 4'b1110 && !(`IS_INT || (!`IS_USR && `BANK_I))) &&
+                !(rd == 4'b1111);
             if(req && `CTL_b == 4'b1111) begin
                 `MCR_USR <= `MCR_USRi;
                 `MCR_MDE <= `MCR_MDEi;
             end
         end
+        `TID: reg_we <= 0;
         // On TR1, then we haven't written to MAR yet if CTL_s is mid/mnd.
         //         so we must check for CTL_d and CTL_s
         // On TW2, then we finished memory access and we just write.
         //         Since TW2 is only for LDR, we don't need to check ctlsigs
         `TW2, `TR1: if(
-            (state == `TR1 && `CTL_s != `CTL_s_mid && `CTL_s != `CTL_s_mnd && `CTL_d == `CTL_d_rd) ||
-            (state == `TW2)
+            `CTL_s != `CTL_s_mid &&
+            `CTL_s != `CTL_s_mnd &&
+            `CTL_d == `CTL_d_rd
         ) case(rd)
             // Deal with register bankings
-            default: reg_we <= 1;
+            default: begin
+                reg_we <= 0;
+                r_obus <= obus;
+            end
             4'b1100: if(`IS_SUP)
                 mcr_s <= obus;
-            else
-                reg_we <= 1;
+            else begin
+                reg_we <= 0;
+                r_obus <= obus;
+            end
             4'b1101: if(`IS_INT || (!`IS_USR && `BANK_I))
                 sp_i <= obus;
-            else 
-                reg_we <= 1;
+            else begin
+                reg_we <= 0;
+                r_obus <= obus;
+            end
             4'b1110: if(`IS_INT || (!`IS_USR && `BANK_I))
                 lr_i <= obus;
-            else
-                reg_we <= 1;
+            else begin
+                reg_we <= 0;
+                r_obus <= obus;
+            end
             4'b1111: begin end
         endcase
         // Interrupt
@@ -289,6 +338,10 @@ module hs32_exec (
             `MCR_NZCVi <= flags[31:28];
             `MCR_USRi <= `MCR_USR;
             `MCR_MDE <= `MCR_MDE;
+        end
+        // Memory read
+        `TM1: if(r_bsy && ackm) begin
+            reg_we <= 1;
         end
     endcase
 
@@ -305,28 +358,27 @@ module hs32_exec (
         `TR2: mar <= obus;
     endcase
 
-    // Memory requests (drive: reqm, rw_mem)
+    // Memory requests (drive: reqm, rw_mem, r_dtrm)
     always @(posedge clk)
     if(reset) begin
-        reqm <= 0;
+        stbm <= 0;
         rw_mem <= 0;
+        r_dtrm <= 0;
+        r_bsy <= 0;
     end else case(state)
-        // Read from memory
-        `TM1: begin
-            if(reqm && rdym) begin
-                reqm <= 0;
-            end else begin
-                reqm <= 1;
-                rw_mem <= 0;
+        // Read (TM1)/Write (TM2) from memory
+        `TM1, `TM2:
+        if(!r_bsy) begin
+            stbm <= 1;
+            rw_mem <= state == `TM2;
+            r_bsy <= 1;
+        end else if(r_bsy) begin
+            if(!stlm) begin
+                stbm <= 0;
             end
-        end
-        // Write to memory
-        `TM2: begin
-            if(reqm && rdym) begin
-                reqm <= 0;
-            end else begin
-                reqm <= 1;
-                rw_mem <= 1;
+            if(ackm) begin
+                r_dtrm <= dtrm;
+                r_bsy <= 0;
             end
         end
     endcase
@@ -338,10 +390,14 @@ module hs32_exec (
         pc_u <= 0;
         pc_s <= 0;
         iack <= 0;
+        newpc <= 0;
     end else case(state)
         `IDLE: begin
             flush <= 0;
-            if(req && !(int_latch || intrq)) begin
+            if(
+                // If request and not interrupt
+                req && !(int_latch || intrq)
+            ) begin
                 // Increment PC before we change states
                 if(`IS_USR)
                     pc_u <= pc_u+4;
@@ -351,15 +407,15 @@ module hs32_exec (
         end
         // Update PC since we take the branch
         `TB1: begin
-            newpc <= { 16'b0, imm } + (`IS_USR ? pc_u : pc_s);
+            newpc <= { {16{imm[15]}}, imm } + (`IS_USR ? pc_u : pc_s) - 4;
             flush <= 1;
             if(`IS_USR)
-                pc_u <= { 16'b0, imm } + pc_u;
+                pc_u <= { {16{imm[15]}}, imm } + pc_u - 4;
             else
-                pc_s <= { 16'b0, imm } + pc_s;
-            if(`CTL_b == 4'b1111) begin
+                pc_s <= { {16{imm[15]}}, imm } + pc_s - 4;
+            /*if(`CTL_b == 4'b1111) begin
                 iack <= 1;
-            end
+            end*/
         end
         `INT: begin
             flush <= 1;
@@ -371,8 +427,9 @@ module hs32_exec (
         end
         // Update the PC from a Rd instruction (see "write to Rd")
         `TW2, `TR1: if(
-            ((state == `TR1 && `CTL_s != `CTL_s_mid && `CTL_s != `CTL_s_mnd && `CTL_d == `CTL_d_rd) ||
-            (state == `TW2)) && rd == 4'b1111
+            `CTL_s != `CTL_s_mid &&
+            `CTL_s != `CTL_s_mnd &&
+            `CTL_d == `CTL_d_rd && rd == 4'b1111
         ) begin
             newpc <= obus;
             flush <= 1;
@@ -388,8 +445,8 @@ module hs32_exec (
         if(reset) begin
             flags <= { 16'b0, 16'h8001 };
         end else if(
-            (state == `TR1 && `CTL_s != `CTL_s_mid && `CTL_s != `CTL_s_mnd && `CTL_d == `CTL_d_rd) ||
-            (state == `TW2) && `BANK_F
+            ((state == `TR1 && `CTL_s != `CTL_s_mid && `CTL_s != `CTL_s_mnd && `CTL_d == `CTL_d_rd) ||
+            (state == `TW2)) && `BANK_F
         ) begin
             flags <= obus;
         end else if(state == `TR1 && `CTL_d == `CTL_d_rd && `CTL_f == 1'b1) begin
@@ -459,7 +516,7 @@ module hs32_exec (
     always @(posedge clk)
         f_past_valid <= 1;
 
-    // 0. 
+    // 0.
 
     `include "cpu/hs32_exec_proof.v"
 `endif

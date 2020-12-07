@@ -25,16 +25,20 @@
 `endif
 
 module soc_bram_ctl (
-    input   wire clk,
-    input   wire[addr_width-1:0] addr,
-    output  reg [31:0] dread,
-    input   wire[31:0] dwrite,
-    input   wire rw,
-    input   wire valid,
-    output  reg  ready
+    input   wire i_clk,
+    input   wire i_reset,
+    input   wire[addr_width-1:0] i_addr,
+    output  wire[31:0] o_dread,
+    input   wire[31:0] i_dwrite,
+    input   wire i_rw,
+    input   wire i_stb,
+    output  reg  o_ack
 );
     parameter addr_width = 8;
-    initial ready = 0;
+    parameter data0 = "bram0.hex";
+    parameter data1 = "bram1.hex";
+    parameter data2 = "bram2.hex";
+    parameter data3 = "bram3.hex";
 
     // 4 addresses for each bram
     // Selects between current dword and next dword
@@ -72,52 +76,65 @@ module soc_bram_ctl (
         (addr[1:0] == 2'b10) ? { dwrite[15:0], dwrite[31:16] } :
                                { dwrite[23:0], dwrite[31:24] } ;
 
-    // Write enable signal
-    wire we; assign we = valid & rw;
+    // Latch inputs
+    wire[addr_width-1:0] addr;
+    wire[31:0] dwrite;
+    wire we;
+    assign addr = i_addr;
+    assign we = i_rw;
+    assign dwrite = i_dwrite;
 
-    // FSM (needed?)
-    reg[1:0] state = 0;
-    always @(posedge clk) case(state)
-        0: begin 
-            if(valid) begin
-                state <= 1;
-            end
-            ready <= 1;
-            dread <= dout;
+    reg r_bsy;
+    assign o_dread = dout;
+    always @(posedge i_clk)
+    if(i_reset) begin
+        o_ack <= 0;
+        r_bsy <= 0;
+        //we <= 0;
+    end else begin
+        if(i_stb/* && !r_bsy*/) begin
+            o_ack <= 1;
+            r_bsy <= 1;
+            //dwrite <= i_dwrite;
+            //addr <= i_addr;
+            //we <= i_rw;
+        end else/* if(r_bsy)*/ begin
+            o_ack <= 0;
+            r_bsy <= 0;
         end
-        1: begin
-            state <= 0;
-            ready <= 0;
-        end
-    endcase
+    end
 
     // 4 brams, each controlled by 1 address line
     soc_bram #(
         .addr_width(addr_width-2),
-        .data_width(8)
+        .data_width(8),
+        .data(data0)
     ) ice40_bram0(
-        .clk(clk), .we(we),
+        .clk(i_clk), .we(we),
         .addr(a3), .din(wbuf[7:0]), .dout(dbuf[7:0])
     );
     soc_bram #(
         .addr_width(addr_width-2),
-        .data_width(8)
+        .data_width(8),
+        .data(data1)
     ) ice40_bram1(
-        .clk(clk), .we(we),
+        .clk(i_clk), .we(we),
         .addr(a2), .din(wbuf[15:8]), .dout(dbuf[15:8])
     );
     soc_bram #(
         .addr_width(addr_width-2),
-        .data_width(8)
+        .data_width(8),
+        .data(data2)
     ) ice40_bram2(
-        .clk(clk), .we(we),
+        .clk(i_clk), .we(we),
         .addr(a1), .din(wbuf[23:16]), .dout(dbuf[23:16])
     );
     soc_bram #(
         .addr_width(addr_width-2),
-        .data_width(8)
+        .data_width(8),
+        .data(data3)
     ) ice40_bram3(
-        .clk(clk), .we(we),
+        .clk(i_clk), .we(we),
         .addr(a0), .din(wbuf[31:24]), .dout(dbuf[31:24])
     );
 

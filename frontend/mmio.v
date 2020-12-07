@@ -21,23 +21,23 @@
 `default_nettype none
 
 module mmio(
-    input wire clk,
-    input wire reset,
+    input  wire clk,
+    input  wire reset,
 
     // Memory interface in
-    input wire valid,
+    input  wire valid,
     output wire ready,
-    input wire[31:0] addr,
-    input wire[31:0] dtw,
+    input  wire[31:0] addr,
+    input  wire[31:0] dtw,
     output wire[31:0] dtr,
-    input wire rw,
+    input  wire rw,
 
     // SRAM Interface
     output wire sval,
-    input wire srdy,
+    input  wire srdy,
     output wire[31:0] saddr,
     output wire[31:0] sdtw,
-    input wire[31:0] sdtr,
+    input  wire[31:0] sdtr,
     output wire srw,
 
     // Interrupt controller
@@ -45,15 +45,18 @@ module mmio(
     output  wire[31:0] handler,     // ISR address
     output  wire intrq,             // Request interrupt
     output  wire[4:0] vec,          // Interrupt vector
-    output  wire nmi               // Non maskable interrupt
+    output  wire nmi,              // Non maskable interrupt
 
-    // TODO: Expose AICT Entries
-    // (Input and output)
+    // AICT Exposed read interal + external ports
+    input  wire[31:0] aict_r[AICT_NUM_RE-1:0],
+    output wire[31:0] aict_w[AICT_NUM_RI-1:0]
 );
-    parameter AICT_LENGTH = 25; // 24 IVT + 1 base
+    parameter AICT_NUM_RE = 0; // Registers read-only from inside (external)
+    parameter AICT_NUM_RI = 0; // Registers read-only from outside (internal)
+    parameter AICT_LENGTH = AICT_NUM_RE+AICT_NUM_RI+24+1; // 24 IVT + 1 base
 
     // Advanced Interrupt Controller Table
-    reg[31:0] aict[25:0];
+    reg[31:0] aict[AICT_LENGTH-1:0];
 
     // Check if there's interrupt(s)
     assign intrq = |interrupts;
@@ -114,9 +117,10 @@ module mmio(
 
     // Bus logic
     always @(posedge clk)
-    if(reset)
+    if(reset) begin
         wrdy <= 0;
-    else if(valid && rw)
+        aict[0] <= 32'hFFFF_0000;
+    end else if(valid && rw)
         wrdy <= 1;
     else begin
         wrdy <= 0;

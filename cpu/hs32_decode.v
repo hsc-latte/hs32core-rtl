@@ -46,18 +46,11 @@ module hs32_decode (
 
     // Fetch
     input   wire [31:0] instd,  // Next instruction
-    output  reg  reqd,          // Valid
-    input   wire rdyd,          // Ready
+    input   wire reqd,          // Valid
+    output  wire rdyd,          // Ready
 
     // Execute
-    output  reg  [3:0]  aluop,  // ALU Operation
-    output  reg  [4:0]  shift,  // 5-bit shift
-    output  reg  [15:0] imm,    // Immediate value
-    output  reg  [3:0]  rd,     // Register Destination Rd
-    output  reg  [3:0]  rm,     // Register Source Rm
-    output  reg  [3:0]  rn,     // Register Operand Rn
-    output  reg  [1:0]  bank,   // Bank (bb)
-    output  reg  [15:0] ctlsig, // Control signals
+    output  wire[54:0] control,
 
     // Execute pipeline logic
     output wire reqe,
@@ -68,68 +61,48 @@ module hs32_decode (
 );
     parameter IMUL = 0;
 
-    reg intrq;
-    reg intloop;
-    reg invalid;
-    reg reqel;
+    // Interrupt status registers
+    reg intrq, doint, intloop, invalid;
 
-    assign reqe = !intloop && reqel;
+    // Control signal outputs
+    reg [3:0]   aluop;  // ALU Operation
+    reg [4:0]   shift;  // 5-bit shift
+    reg [15:0]  imm;    // Immediate value
+    reg [3:0]   rd;     // Register Destination Rd
+    reg [3:0]   rm;     // Register Source Rm
+    reg [3:0]   rn;     // Register Operand Rn
+    reg [1:0]   bank;   // Bank (bb)
+    reg [15:0]  ctlsig; // Control signals
+    assign control = { aluop, shift, imm, rd, rm, rn, bank, ctlsig };
+    
+    // Interrupt assignments
+    genvar i;
+    generate
+        assign int_line[0]  = (imm == 0 || invalid) && doint ? 1 : 0;
+        for(i = 1; i < 24; i=i+1) begin
+            assign int_line[i] = imm == i && doint ? 1 : 0;
+        end
+    endgenerate
 
-    assign int_line[0]  = (imm == 0  && intrq) || invalid ? 1 : 0;
-    assign int_line[1]  = imm == 1  && intrq ? 1 : 0;
-    assign int_line[2]  = imm == 2  && intrq ? 1 : 0;
-    assign int_line[3]  = imm == 3  && intrq ? 1 : 0;
-    assign int_line[4]  = imm == 4  && intrq ? 1 : 0;
-    assign int_line[5]  = imm == 5  && intrq ? 1 : 0;
-    assign int_line[6]  = imm == 6  && intrq ? 1 : 0;
-    assign int_line[7]  = imm == 7  && intrq ? 1 : 0;
-    assign int_line[8]  = imm == 8  && intrq ? 1 : 0;
-    assign int_line[9]  = imm == 9  && intrq ? 1 : 0;
-    assign int_line[10] = imm == 10 && intrq ? 1 : 0;
-    assign int_line[11] = imm == 11 && intrq ? 1 : 0;
-    assign int_line[12] = imm == 12 && intrq ? 1 : 0;
-    assign int_line[13] = imm == 13 && intrq ? 1 : 0;
-    assign int_line[14] = imm == 14 && intrq ? 1 : 0;
-    assign int_line[15] = imm == 15 && intrq ? 1 : 0;
-    assign int_line[16] = imm == 16 && intrq ? 1 : 0;
-    assign int_line[17] = imm == 17 && intrq ? 1 : 0;
-    assign int_line[18] = imm == 18 && intrq ? 1 : 0;
-    assign int_line[19] = imm == 19 && intrq ? 1 : 0;
-    assign int_line[20] = imm == 20 && intrq ? 1 : 0;
-    assign int_line[21] = imm == 21 && intrq ? 1 : 0;
-    assign int_line[22] = imm == 22 && intrq ? 1 : 0;
-    assign int_line[23] = imm == 23 && intrq ? 1 : 0;
-
-    reg full;
-
+    reg full, r_reqe, r_bsy;
+    assign rdyd = !full | (full & rdye);
+    assign reqe = rdye & (full | r_reqe);
+    
     always @(posedge clk)
     if(reset) begin
-        reqd <= 0;
-        reqel <= 0;
         full <= 0;
+        r_reqe <= 0;
+        r_bsy <= 0;
     end else if(!intloop) begin
-        if(!full) begin
-            if(reqd && rdyd) begin
-                full <= 1;
-                reqd <= 0;
-                reqel <= 1;
-            end else begin
-                reqd <= 1;
-                reqel <= 0;
-            end
-        end else begin
-            if(reqe && rdye) begin
-                full <= 0;
-                reqd <= 1;
-                reqel <= 0;
-            end else begin
-                reqd <= 0;
-                reqel <= 1;
-            end
+        if(reqd && rdyd) begin
+            full <= 1;
+            r_reqe <= rdye;
         end
-    end else begin
-        reqd <= 0;
-        reqel <= 0;
+        if(rdye) begin
+            full <= 0;
+        end else begin
+            r_reqe <= 0;
+        end
     end
 
     // Generate IMUL
@@ -138,15 +111,20 @@ module hs32_decode (
         invalid <= 0;
         intrq <= 0;
         intloop <= 0;
+        doint <= 0;
     end else begin
         // Reset interrupts
-        if(intrq || invalid) begin
+        if((intrq || invalid) && rdye) begin
             intrq <= 0;
+            doint <= 1;
+        end
+        if(doint) begin
             invalid <= 0;
+            doint <= 0;
         end
 
         /* If Ready Received */
-        if (reqd && rdyd) begin
+        if ((reqd && rdyd) || full) begin
             /* ISA OP Code Decoding */
 
             /*************************************************************************/
@@ -168,8 +146,8 @@ module hs32_decode (
                 /* LDR     Rd <- [Rm + imm] */
                 `HS32_LDRI: begin
                     aluop <= `HS32A_ADD;     // ADD
-                    shift <= 5'd0;   // [IGNORED] Shift
-                    imm <= `HS32_IMM;       // Imm
+                    shift <= 5'd0;           // [IGNORED] Shift
+                    imm <= `HS32_IMM;        // Imm
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
                     rn <= `HS32_RN;         // [IGNORED] Rn
@@ -179,8 +157,8 @@ module hs32_decode (
                 /* LDR     Rd <- [Rm] */
                 `HS32_LDR: begin
                     aluop <= `HS32A_ADD;     // ADD
-                    shift <= 5'd0;   // [IGNORED] Shift
-                    imm <= `HS32_NULLI;     // [ZERO] Imm
+                    shift <= 5'd0;           // [IGNORED] Shift
+                    imm <= `HS32_NULLI;      // [ZERO] Imm
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
                     rn <= `HS32_RN;         // [IGNORED] Rn
@@ -206,8 +184,8 @@ module hs32_decode (
                 /* STR     [Rm + imm] <- Rd */
                 `HS32_STRI: begin
                     aluop <= `HS32A_ADD;     // ADD
-                    shift <= 5'd0;   // [IGNORED] Shift
-                    imm <= `HS32_IMM;       // Imm
+                    shift <= 5'd0;           // [IGNORED] Shift
+                    imm <= `HS32_IMM;        // Imm
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
                     rn <= `HS32_RN;         // [IGNORED] Rn
@@ -244,8 +222,8 @@ module hs32_decode (
                 /* MOV     Rd <- imm */
                 `HS32_MOVI: begin
                     aluop <= `HS32A_MOV;     // MOV
-                    shift <= 5'd0;   // [IGNORED] Shift
-                    imm <= `HS32_IMM;       // Imm
+                    shift <= 5'd0;           // [IGNORED] Shift
+                    imm <= `HS32_IMM;        // Imm
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;         // [IGNORED] Rm
                     rn <= `HS32_RN;         // [IGNORED] Rn
@@ -379,7 +357,7 @@ module hs32_decode (
                 /* ADD     Rd <- Rm + imm */
                 `HS32_ADDI: begin
                     aluop <= `HS32A_ADD;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -390,7 +368,7 @@ module hs32_decode (
                 /* ADDC    Rd <- Rm + imm + C */
                 `HS32_ADDIC: begin
                     aluop <= `HS32A_ADC;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -401,7 +379,7 @@ module hs32_decode (
                 /* SUB     Rd <- Rm - imm */
                 `HS32_SUBI: begin
                     aluop <= `HS32A_SUB;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -423,7 +401,7 @@ module hs32_decode (
                 /* SUBC    Rd <- Rm - imm - C */
                 `HS32_SUBIC: begin
                     aluop <= `HS32A_SBC;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -434,7 +412,7 @@ module hs32_decode (
                 /* RSUBC   Rd <- imm - Rm - C */
                 `HS32_RSUBIC: begin
                     aluop <= `HS32A_SBC;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -499,7 +477,7 @@ module hs32_decode (
                 /* AND     Rd <- Rm & imm */
                 `HS32_ANDI: begin
                     aluop <= `HS32A_AND;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -510,7 +488,7 @@ module hs32_decode (
                 /* BIC     Rd <- Rm & ~imm */
                 `HS32_BICI: begin
                     aluop <= `HS32A_BIC;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -521,7 +499,7 @@ module hs32_decode (
                 /* OR      Rd <- Rm | imm */
                 `HS32_ORI: begin            // Halo are the Ori >:]
                     aluop <= `HS32A_OR;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -532,7 +510,7 @@ module hs32_decode (
                 /* XOR     Rd <- Rm ^ imm */
                 `HS32_XORI: begin
                     aluop <= `HS32A_XOR;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -559,7 +537,7 @@ module hs32_decode (
                 /* CMP     Rm - imm */
                 `HS32_CMPI: begin
                     aluop <= `HS32A_SUB;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -581,7 +559,7 @@ module hs32_decode (
                 /* TST     Rm & imm */
                 `HS32_TSTI: begin
                     aluop <= `HS32A_AND;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
@@ -597,24 +575,32 @@ module hs32_decode (
                 /* B<c>    PC + Offset */
                 `HS32_BRCH: begin
                     aluop <= `HS32A_ADD;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
                     rd <= `HS32_RD;
                     rm <= `HS32_RM;
                     rn <= `HS32_RN;
                     bank <= `HS32_BANK;     // [IGNORED] Bank
-                    ctlsig <= { 6'b00_0_000, instd[27:24], 3'b00, `HS32_SHIFTDIR, 1'b0 };
+                    ctlsig <= {
+                        6'b00_0_000,
+                        instd[27:24] == 0 ? 4'hF : instd[27:24],
+                        3'b00, `HS32_SHIFTDIR, 1'b0
+                    };
                 end
                 /* B<c>L   PC + Offset */
                 `HS32_BRCL: begin
                     aluop <= `HS32A_MOV;
-                    shift <= `HS32_SHIFT;
+                    shift <= 0;
                     imm <= `HS32_IMM;
-                    rd <= `HS32_RD;
-                    rm <= `HS32_RN;
-                    rn <= `HS32_RN;
+                    rd <= 4'b1110;
+                    rm <= 4'b1111;
+                    rn <= 4'b1111;
                     bank <= `HS32_BANK;     // [IGNORED] Bank
-                    ctlsig <= { 6'b01_1_010, instd[27:24], 3'b000, `HS32_SHIFTDIR, 1'b0 };
+                    ctlsig <= {
+                        6'b01_1_010,
+                        instd[27:24] == 0 ? 4'hF : instd[27:24],
+                        3'b000, `HS32_SHIFTDIR, 1'b0
+                    };
                 end
 
                 /**************/
