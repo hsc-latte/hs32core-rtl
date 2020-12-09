@@ -1,21 +1,21 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Mon Dec 07 08:47:00 2020
+[*] Wed Dec 09 08:12:41 2020
 [*]
 [dumpfile] "c:\Users\Kevin\Desktop\Projects\fpga\hsc\rtl\build\dump.vcd"
-[dumpfile_mtime] "Mon Dec 07 08:46:52 2020"
-[dumpfile_size] 57222
+[dumpfile_mtime] "Wed Dec 09 08:00:20 2020"
+[dumpfile_size] 136820
 [savefile] "C:\Users\Kevin\Desktop\Projects\fpga\hsc\rtl\bench\rtl\tb_soc.gtkw"
 [timestart] 0
 [size] 1536 801
-[pos] -1 -1
-*-5.000000 48 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] -191 -191
+*-5.928874 96 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_soc.
 [treeopen] tb_soc.bram_ctl.
 [treeopen] tb_soc.cpu.
 [treeopen] tb_soc.cpu.EXEC.
 [sst_width] 272
-[signals_width] 262
+[signals_width] 282
 [sst_expanded] 1
 [sst_vpaned_height] 473
 @28
@@ -38,6 +38,50 @@ tb_soc.bram_ctl.o_dread[31:0]
 tb_soc.bram_ctl.i_rw
 @1401200
 -BRAM
+@c00200
+-MMIO
+@28
+tb_soc.mmio_unit.clk
+tb_soc.mmio_unit.reset
+@200
+-
+@28
+tb_soc.mmio_unit.stb
+tb_soc.mmio_unit.ack
+@22
+tb_soc.mmio_unit.addr[31:0]
+tb_soc.mmio_unit.dtw[31:0]
+tb_soc.mmio_unit.dtr[31:0]
+@28
+tb_soc.mmio_unit.rw
+@200
+-
+@28
+tb_soc.mmio_unit.sstb
+tb_soc.mmio_unit.sack
+@22
+tb_soc.mmio_unit.saddr[31:0]
+tb_soc.mmio_unit.sdtr[31:0]
+tb_soc.mmio_unit.sdtw[31:0]
+@28
+tb_soc.mmio_unit.srw
+@200
+-
+@22
+tb_soc.mmio_unit.interrupts[23:0]
+tb_soc.mmio_unit.handler[31:0]
+@28
+tb_soc.mmio_unit.intrq
+@24
+tb_soc.mmio_unit.vec[4:0]
+@28
+tb_soc.mmio_unit.nmi
+@200
+-
+@28
+tb_soc.mmio_unit.is_aict
+@1401200
+-MMIO
 @c00200
 -Mem
 @28
@@ -91,7 +135,6 @@ tb_soc.cpu.FETCH.ackm
 tb_soc.cpu.FETCH.stlm
 tb_soc.cpu.FETCH.r_bsy
 @22
-[color] 3
 tb_soc.cpu.FETCH.pc[31:0]
 @200
 -
@@ -115,9 +158,9 @@ tb_soc.cpu.FETCH.rp[3:0]
 tb_soc.cpu.FETCH.wp[3:0]
 @1401200
 -Fetch
-@c00200
+@800201
 -Queue
-@22
+@23
 tb_soc.cpu.FETCH.\fifo[0][31:0]
 tb_soc.cpu.FETCH.\fifo[1][31:0]
 tb_soc.cpu.FETCH.\fifo[2][31:0]
@@ -126,9 +169,9 @@ tb_soc.cpu.FETCH.\fifo[4][31:0]
 tb_soc.cpu.FETCH.\fifo[5][31:0]
 tb_soc.cpu.FETCH.\fifo[6][31:0]
 tb_soc.cpu.FETCH.\fifo[7][31:0]
-@1401200
+@1000201
 -Queue
-@800200
+@c00200
 -Decode
 @28
 tb_soc.cpu.DECODE.clk
@@ -165,7 +208,7 @@ tb_soc.cpu.DECODE.rd[3:0]
 tb_soc.cpu.DECODE.rm[3:0]
 tb_soc.cpu.DECODE.rn[3:0]
 tb_soc.cpu.DECODE.shift[4:0]
-@1000200
+@1401200
 -Decode
 @c00200
 -Execute
@@ -177,6 +220,9 @@ tb_soc.cpu.EXEC.req
 tb_soc.cpu.EXEC.rdy
 @22
 tb_soc.cpu.EXEC.state[3:0]
+@28
+tb_soc.cpu.EXEC.fault
+tb_soc.cpu.EXEC.int_inval
 @c00200
 -Module I/O
 @28
@@ -217,15 +263,31 @@ tb_soc.cpu.EXEC.rw_mem
 tb_soc.cpu.EXEC.intrq
 @1401200
 -Module I/O
-@800200
+@c00200
 -Internal Bus
 @22
 tb_soc.cpu.EXEC.ibus1[31:0]
 tb_soc.cpu.EXEC.ibus2[31:0]
 tb_soc.cpu.EXEC.obus[31:0]
 tb_soc.cpu.EXEC.aluout[31:0]
-@1000200
+@1401200
 -Internal Bus
+@c00200
+-ALU
+@22
+tb_soc.cpu.EXEC.alu_nzcv[3:0]
+@28
+tb_soc.cpu.EXEC.alu_nzcv_out[3:0]
+tb_soc.cpu.EXEC.alu.carry
+@22
+tb_soc.cpu.EXEC.alu.i_a[31:0]
+tb_soc.cpu.EXEC.alu.i_b[31:0]
+tb_soc.cpu.EXEC.alu.i_fl[3:0]
+tb_soc.cpu.EXEC.alu.i_op[3:0]
+tb_soc.cpu.EXEC.alu.o_fl[3:0]
+tb_soc.cpu.EXEC.alu.o_r[31:0]
+@1401200
+-ALU
 @c00200
 -Special Registers
 @22
@@ -237,6 +299,7 @@ tb_soc.cpu.EXEC.pc_u[31:0]
 tb_soc.cpu.EXEC.lr_i[31:0]
 tb_soc.cpu.EXEC.sp_i[31:0]
 tb_soc.cpu.EXEC.mcr_s[31:0]
+tb_soc.cpu.EXEC.flags[31:0]
 @1401200
 -Special Registers
 @c00200

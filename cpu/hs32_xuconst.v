@@ -22,15 +22,15 @@
 `define HS32_XUCONST
 
 // Control signals bit selects
-`define CTL_d       ctlsig[15:14]
-`define CTL_r       ctlsig[13   ]
-`define CTL_s       ctlsig[12:10]
-`define CTL_b       ctlsig[9:6  ]
-`define CTL_i       ctlsig[5:4  ]
-`define CTL_f       ctlsig[3    ]
-`define CTL_l       ctlsig[2    ]
-`define CTL_D       ctlsig[1    ]
-`define CTL_B       ctlsig[0    ]
+`define CTL_d       ctlsig[15:14]   // Destination
+`define CTL_r       ctlsig[13   ]   // Reverse bus
+`define CTL_s       ctlsig[12:10]   // Source
+`define CTL_b       ctlsig[9:6  ]   // Branch conditions
+`define CTL_i       ctlsig[5    ]   // Bank source/dest (1 for write, 0 for read)
+`define CTL_f       ctlsig[4    ]   // Modify flags
+`define CTL_g       ctlsig[3    ]   // 0 to ignore branch
+`define CTL_D       ctlsig[2:1  ]   // Shift mode
+`define CTL_B       ctlsig[0    ]   // 0 to ignore bank
 
 // Source signal types
 `define CTL_s_xxx   3'b000
@@ -65,15 +65,29 @@
 `define INT         9
 `define DIE         10
 `define TID         11
+`define INTRET      12
 
 // MCR defines current machine mode
-`define MCR_USR     mcr_s[2]
-`define MCR_MDE     mcr_s[1]
-`define MCR_INTEN   mcr_s[0]
-`define MCR_VEC     mcr_s[7:3]
-`define MCR_NZCVi   mcr_s[11:8]
-`define MCR_USRi    mcr_s[12]
-`define MCR_MDEi    mcr_s[13]
+`define MCR_INTEN   mcr_s[0]        // Interrupt enable
+`define MCR_MDE     mcr_s[1]        // Supervisor mode bit
+`define MCR_USR     mcr_s[2]        // User mode bit
+`define MCR_VEC     mcr_s[7:3]      // Interrupt vector
+`define MCR_NZCVi   mcr_s[11:8]     // Saved flags
+`define MCR_USRi    mcr_s[12]       // Saved user mode bit
+`define MCR_MDEi    mcr_s[13]       // Saved super mode bit
+
+// Debug modes
+`define MCR_DBG     mcr_s[14]       // Debug mode enable
+`define MCR_DBG_B   mcr_s[15]       // Break when branch
+`define MCR_DBG_L   mcr_s[16]       // Break when link
+`define MCR_DBG_R   mcr_s[17]       // Break when memory read
+`define MCR_DBG_W   mcr_s[18]       // Break when memory write
+`define MCR_DBGi_S  mcr_s[19]       // Debug interrupted
+`define MCR_DBGi_B  mcr_s[20]
+`define MCR_DBGi_L  mcr_s[21]
+`define MCR_DBGi_R  mcr_s[22]
+`define MCR_DBGi_W  mcr_s[23]
+`define MCR_DBGSn   mcr_s[31:24]    // Step amount
 
 // Mode check macros
 `define IS_USR      (`MCR_USR == 1)

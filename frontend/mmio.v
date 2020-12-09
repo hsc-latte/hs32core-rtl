@@ -25,16 +25,16 @@ module mmio(
     input  wire reset,
 
     // Memory interface in
-    input  wire valid,
-    output wire ready,
+    input  wire stb,
+    output wire ack,
     input  wire[31:0] addr,
     input  wire[31:0] dtw,
     output wire[31:0] dtr,
     input  wire rw,
 
     // SRAM Interface
-    output wire sval,
-    input  wire srdy,
+    output wire sstb,
+    input  wire sack,
     output wire[31:0] saddr,
     output wire[31:0] sdtw,
     input  wire[31:0] sdtr,
@@ -45,7 +45,7 @@ module mmio(
     output  wire[31:0] handler,     // ISR address
     output  wire intrq,             // Request interrupt
     output  wire[4:0] vec,          // Interrupt vector
-    output  wire nmi,              // Non maskable interrupt
+    output  wire nmi,               // Non maskable interrupt
 
     // AICT Exposed read interal + external ports
     input  wire[31:0] aict_r[AICT_NUM_RE-1:0],
@@ -59,7 +59,7 @@ module mmio(
     reg[31:0] aict[AICT_LENGTH-1:0];
 
     // Check if there's interrupt(s)
-    assign intrq = |interrupts;
+    assign intrq = (|interrupts) & (aict[vec + 1][0] | nmi);
 
     // NMI
     assign nmi = interrupts[0] || interrupts[1];
@@ -90,10 +90,10 @@ module mmio(
         interrupts[20] ? 20 :
         interrupts[21] ? 21 :
         interrupts[22] ? 22 : 23;
-    assign handler = aict[vec + 1];
+    assign handler = aict[vec + 1] & (~32'b1111);
 
     // Write ready
-    reg wrdy;
+    reg wack;
 
     // AICT is from aict_base to aict_base + AICT_LENGTH*4
     wire is_aict;
@@ -106,23 +106,30 @@ module mmio(
 
     // Multiplex aict entry and sram signals
     // Ready is 1 only when reading
-    assign ready = is_aict ? rw ? wrdy : 1 : srdy;
+    assign ack = is_aict ? rw ? wack : 1 : sack;
     assign dtr = is_aict ? aict[aict_idx] : sdtr;
 
     // Assign all sram output
     assign srw = rw;
-    assign sval = valid && !is_aict;
+    assign sstb = stb && !is_aict;
     assign saddr = addr;
     assign sdtw = dtw;
+
+    // Reset
+    integer i;
+    always @(posedge clk) if(reset) begin
+        aict[0] <= 32'h0000_FF00;
+        for(i = 1; i < 25; i++)
+            aict[i] <= 0;
+    end
 
     // Bus logic
     always @(posedge clk)
     if(reset) begin
-        wrdy <= 0;
-        aict[0] <= 32'hFFFF_0000;
-    end else if(valid && rw)
-        wrdy <= 1;
+        wack <= 0;
+    end else if(stb && rw)
+        wack <= 1;
     else begin
-        wrdy <= 0;
+        wack <= 0;
     end
 endmodule

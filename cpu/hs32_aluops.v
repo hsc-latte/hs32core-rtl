@@ -36,5 +36,6 @@
 `define HS32A_MUL       4'b1000
 `define HS32A_ADC       4'b1010
 `define HS32A_SBC       4'b1011
+`define HS32A_MOV2      4'b1100
 
 `endif

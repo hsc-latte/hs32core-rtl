@@ -119,7 +119,7 @@ module hs32_exec (
 
     wire [31:0] ibus1, ibus2, ibus2_sh, obus;
     // Memory address and data registers
-    reg  [31:0] mar, dtw, r_obus, r_dtrm;
+    reg  [31:0] mar, dtw, r_dtrm;
     assign addr = mar;
     assign dtwm = dtw;
     assign userbit = `MCR_USR;
@@ -141,14 +141,34 @@ module hs32_exec (
     // General access switching
     reg reg_we;
     wire[31:0] regouta, regoutb;
-    assign reg_we_u = `IS_USR || `BANK_U ? reg_we : 0;
-    assign reg_we_s = !(`IS_USR || `BANK_U) ? reg_we : 0;
+    assign reg_we_u =  (`IS_USR || (`BANK_U && `CTL_i)) ? reg_we : 0;
+    assign reg_we_s = !(`IS_USR || (`BANK_U && `CTL_i)) ? reg_we : 0;
     assign regouta =
-        `IS_USR || `BANK_U ? regouta_u :
-        (`IS_INT || `BANK_I) && regadra == 4'b1110 ? lr_i : regouta_s;
+        // User bank select
+        (`IS_USR || (`BANK_U && !`CTL_i)) ?
+            // PC select
+            regadra == 4'b1111 ? pc_u : regouta_u :
+        // Flags select
+        (`BANK_F && !`CTL_i) ? flags :
+        // PC select
+        regadra == 4'b1111 ? pc_s :
+        // MCR select
+        regadra == 4'b1100 ? mcr_s :
+        // Interrupt bank select
+        (`IS_INT || (`BANK_I && !`CTL_i)) ?
+            regadra == 4'b1101 ? sp_i :
+            regadra == 4'b1110 ? lr_i : regouta_s :
+        regouta_s;
     assign regoutb =
-        `IS_USR || `BANK_U ? regoutb_u :
-        (`IS_INT || `BANK_I) && regadrb == 4'b1110 ? lr_i : regoutb_s;
+        (`IS_USR || (`BANK_U && !`CTL_i)) ?
+            regadrb == 4'b1111 ? pc_u : regoutb_u :
+        (`BANK_F && !`CTL_i) ? flags :
+        regadrb == 4'b1111 ? pc_s :
+        regadrb == 4'b1100 ? mcr_s :
+        (`IS_INT || (`BANK_I && !`CTL_i)) ?
+            regadrb == 4'b1101 ? sp_i :
+            regadrb == 4'b1110 ? lr_i : regoutb_s :
+        regoutb_s;
     // Register select
     assign regadra =
         state == `TR1 ?
@@ -161,10 +181,7 @@ module hs32_exec (
     // Bus assignments
     //===============================//
 
-    assign ibus1 =
-        regadra == 4'b1111 ?
-        (`IS_USR || `BANK_U ? pc_u : pc_s)
-        : regouta;
+    assign ibus1 = regouta;
     assign ibus2 =
         (`CTL_s == `CTL_s_xix ||
          `CTL_s == `CTL_s_mix ||
@@ -189,31 +206,48 @@ module hs32_exec (
     endgenerate
 
     //===============================//
+    // Status lines (reusable code)
+    //===============================//
+
+    wire int_except = `IS_USR && (`BANK_S || `BANK_I || `BANK_F);
+    wire int_dbg = !`IS_INT && `MCR_DBG;
+    wire int_dbg_s = int_dbg && !(|`MCR_DBGSn);
+    wire int_dbg_b = int_dbg && `CTL_g && (flags[{ 1'b0, `CTL_b }] == 1'b1);
+    wire int_dbg_l = int_dbg_b && `CTL_d == `CTL_d_rd;
+    wire int_dbg_r = int_dbg && `CTL_d == `CTL_d_dt_ma;
+    wire int_dbg_w = int_dbg && `CTL_d == `CTL_d_ma;
+
+    //===============================//
     // FSM
     //===============================//
 
-    // State transitions only (drive: state)
+    // State transitions only (drive: state, fault, int_inval)
     reg[3:0] state;
     always @(posedge clk)
     if(reset) begin
         state <= 0;
         fault <= 0;
+        int_inval <= 0;
     end else case(state)
         `IDLE: if(int_latch || intrq) begin
             state <= `INT;
-            if(`IS_INT)
+            if(`IS_INT) begin
                 fault <= 1;
+            end
         end else if(req) begin
             r_control <= control;
             state <=
-                (`IS_USR && (`BANK_S || `BANK_I || `BANK_F)) ? `DIE :
+                int_except ? `DIE :
                 // All states (except branch) start with `TR1
-                (`CTL_b == 0) ? `TR1 :
+                (`CTL_g == 0) ? `TR1 :
+                // Return from interrupt
+                (`CTL_b == 4'b1111 && `IS_INT) ? `INTRET :
                 // Decide whether to branch or not
                 (flags[{ 1'b0, `CTL_b }] == 1'b1) ? `TB1 :
                 // No branch taken
                 `IDLE;
-            int_inval <= (`IS_USR && (`BANK_S || `BANK_I || `BANK_F));
+            int_inval <= int_except || int_dbg_s || int_dbg_b || int_dbg_l
+                || int_dbg_r || int_dbg_w;
         end
         `TB1: begin
             state <= `TR1;
@@ -259,12 +293,15 @@ module hs32_exec (
             state <= `TB2;
             fault <= 0;
         end
+        `INTRET: begin
+            state <= `TB2;
+        end
         `DIE: begin
             int_inval <= 0;
             if(int_latch || intrq)
                 state <= `IDLE;
         end
-        `TID: state <= `IDLE;
+        `TID: state <= `TID;
     endcase
 
     //===============================//
@@ -279,22 +316,24 @@ module hs32_exec (
         mcr_s <= 0;
         reg_we <= 0;
     end else case(state)
-        `IDLE: begin
+        `IDLE: if(req) begin
             // Determine if reg_we will go high
             reg_we <=
                 `CTL_s != `CTL_s_mid &&
                 `CTL_s != `CTL_s_mnd &&
                 `CTL_d == `CTL_d_rd &&
-                !(rd == 4'b1100 && !`IS_SUP) &&
-                !(rd == 4'b1101 && !(`IS_INT || (!`IS_USR && `BANK_I))) &&
-                !(rd == 4'b1110 && !(`IS_INT || (!`IS_USR && `BANK_I))) &&
+                !(rd == 4'b1100 && `IS_SUP) &&
+                !(rd == 4'b1101 && (`IS_INT || (!`IS_USR && `BANK_I && `CTL_i))) &&
+                !(rd == 4'b1110 && (`IS_INT || (!`IS_USR && `BANK_I && `CTL_i))) &&
                 !(rd == 4'b1111);
-            if(req && `CTL_b == 4'b1111) begin
-                `MCR_USR <= `MCR_USRi;
-                `MCR_MDE <= `MCR_MDEi;
-            end
+            // Debug interrupt values
+            `MCR_DBGSn <= int_dbg ? `MCR_DBGSn - 1 : `MCR_DBGSn;
+            `MCR_DBGi_S <= int_dbg_s;
+            `MCR_DBGi_B <= int_dbg_b;
+            `MCR_DBGi_L <= int_dbg_l;
+            `MCR_DBGi_R <= int_dbg_r;
+            `MCR_DBGi_W <= int_dbg_w;
         end
-        `TID: reg_we <= 0;
         // On TR1, then we haven't written to MAR yet if CTL_s is mid/mnd.
         //         so we must check for CTL_d and CTL_s
         // On TW2, then we finished memory access and we just write.
@@ -307,28 +346,33 @@ module hs32_exec (
             // Deal with register bankings
             default: begin
                 reg_we <= 0;
-                r_obus <= obus;
             end
             4'b1100: if(`IS_SUP)
                 mcr_s <= obus;
             else begin
                 reg_we <= 0;
-                r_obus <= obus;
             end
-            4'b1101: if(`IS_INT || (!`IS_USR && `BANK_I))
+            4'b1101: if(`IS_INT || (!`IS_USR && `BANK_I && `CTL_i))
                 sp_i <= obus;
             else begin
                 reg_we <= 0;
-                r_obus <= obus;
             end
-            4'b1110: if(`IS_INT || (!`IS_USR && `BANK_I))
+            4'b1110: if(`IS_INT || (!`IS_USR && `BANK_I && `CTL_i))
                 lr_i <= obus;
             else begin
                 reg_we <= 0;
-                r_obus <= obus;
             end
             4'b1111: begin end
         endcase
+        `TB1: reg_we <= 0;
+        // Memory read
+        `TM1: if(r_bsy && ackm) begin
+            reg_we <=
+                !(rd == 4'b1100 && `IS_SUP) &&
+                !(rd == 4'b1101 && (`IS_INT || (!`IS_USR && `BANK_I && `CTL_i))) &&
+                !(rd == 4'b1110 && (`IS_INT || (!`IS_USR && `BANK_I && `CTL_i))) &&
+                !(rd == 4'b1111);
+        end
         // Interrupt
         `INT: begin
             lr_i <= `IS_USR ? pc_u : pc_s;
@@ -337,11 +381,12 @@ module hs32_exec (
             `MCR_VEC <= code_latch;
             `MCR_NZCVi <= flags[31:28];
             `MCR_USRi <= `MCR_USR;
-            `MCR_MDE <= `MCR_MDE;
+            `MCR_MDEi <= `MCR_MDE;
         end
-        // Memory read
-        `TM1: if(r_bsy && ackm) begin
-            reg_we <= 1;
+        // Return from interrupt
+        `INTRET: begin
+            `MCR_USR <= `MCR_USRi;
+            `MCR_MDE <= `MCR_MDEi;
         end
     endcase
 
@@ -383,7 +428,7 @@ module hs32_exec (
         end
     endcase
 
-    // Branch (drive: flush, pc_u, pc_s)
+    // Branch (drive: flush, pc_u, pc_s, iack)
     always @(posedge clk)
     if(reset) begin
         flush <= 0;
@@ -413,9 +458,6 @@ module hs32_exec (
                 pc_u <= { {16{imm[15]}}, imm } + pc_u - 4;
             else
                 pc_s <= { {16{imm[15]}}, imm } + pc_s - 4;
-            /*if(`CTL_b == 4'b1111) begin
-                iack <= 1;
-            end*/
         end
         `INT: begin
             flush <= 1;
@@ -433,10 +475,21 @@ module hs32_exec (
         ) begin
             newpc <= obus;
             flush <= 1;
-            if(`IS_USR || `BANK_U)
+            if(`IS_USR || (`BANK_U && `CTL_i))
                 pc_u <= obus;
             else
                 pc_s <= obus;
+        end
+        // Return from interrupt
+        `INTRET: begin
+            iack <= 1;
+            flush <= 1;
+            newpc <= lr_i;
+            if(`MCR_USRi) begin
+                pc_u <= lr_i;
+            end else begin
+                pc_s <= lr_i;
+            end
         end
     endcase
 
@@ -444,14 +497,24 @@ module hs32_exec (
     always @(posedge clk) begin
         if(reset) begin
             flags <= { 16'b0, 16'h8001 };
-        end else if(
-            ((state == `TR1 && `CTL_s != `CTL_s_mid && `CTL_s != `CTL_s_mnd && `CTL_d == `CTL_d_rd) ||
-            (state == `TW2)) && `BANK_F
-        ) begin
-            flags <= obus;
-        end else if(state == `TR1 && `CTL_d == `CTL_d_rd && `CTL_f == 1'b1) begin
-            flags <= { alu_nzcv, 12'b0, branch_conds };
-        end
+        end else case(state)
+            `TR1, `TW2: if(
+                `CTL_s != `CTL_s_mid &&
+                `CTL_s != `CTL_s_mnd &&
+                `CTL_d == `CTL_d_rd &&
+                `BANK_F && `CTL_i
+            ) begin
+                flags <= obus;
+            end else if(
+                state == `TR1 &&
+                `CTL_d == `CTL_d_rd &&
+                `CTL_f == 1'b1
+            ) begin
+                flags <= { alu_nzcv, 12'b0, branch_conds };
+            end
+            // Restore flags
+            `INTRET: flags <= { `MCR_NZCVi, 12'b0, 16'h8001 };
+        endcase
     end
 
     //===============================//

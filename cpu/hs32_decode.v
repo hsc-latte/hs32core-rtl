@@ -124,7 +124,7 @@ module hs32_decode (
         end
 
         /* If Ready Received */
-        if ((reqd && rdyd) || full) begin
+        if (((reqd && rdyd) || full) && !intloop) begin
             /* ISA OP Code Decoding */
 
             /*************************************************************************/
@@ -243,7 +243,7 @@ module hs32_decode (
                 end
                 /* MOV     Rd <- Rm_b */
                 `HS32_MOV: begin
-                    aluop <= `HS32A_MOV;    // MOV
+                    aluop <= `HS32A_MOV2;   // MOV
                     shift <= 5'd0;          // [IGNORED] Shift
                     imm <= `HS32_NULLI;     // [ZERO] Imm
                     rd <= `HS32_RD;
@@ -254,7 +254,7 @@ module hs32_decode (
                 end
                 /* MOV     Rd_b <- Rm */
                 `HS32_MOVR: begin
-                    aluop <= `HS32A_MOV;    // MOV
+                    aluop <= `HS32A_MOV2;   // MOV
                     shift <= 5'd0;          // [IGNORED] Shift
                     imm <= `HS32_NULLI;     // [ZERO] Imm
                     rd <= `HS32_RD;
@@ -583,8 +583,8 @@ module hs32_decode (
                     bank <= `HS32_BANK;     // [IGNORED] Bank
                     ctlsig <= {
                         6'b00_0_000,
-                        instd[27:24] == 0 ? 4'hF : instd[27:24],
-                        3'b00, `HS32_SHIFTDIR, 1'b0
+                        instd[27:24],
+                        3'b001, `HS32_SHIFTDIR, 1'b0
                     };
                 end
                 /* B<c>L   PC + Offset */
@@ -598,8 +598,8 @@ module hs32_decode (
                     bank <= `HS32_BANK;     // [IGNORED] Bank
                     ctlsig <= {
                         6'b01_1_010,
-                        instd[27:24] == 0 ? 4'hF : instd[27:24],
-                        3'b000, `HS32_SHIFTDIR, 1'b0
+                        instd[27:24],
+                        3'b001, `HS32_SHIFTDIR, 1'b0
                     };
                 end
 

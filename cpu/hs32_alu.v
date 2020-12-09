@@ -49,6 +49,7 @@ module hs32_alu (
             // Generate IMUL
             (i_op == `HS32A_MUL && IMUL) ? i_a * i_b :
 
+            (i_op == `HS32A_MOV2) ? { i_fl[1], i_a } :
             { i_fl[1], i_b };
     endgenerate
 

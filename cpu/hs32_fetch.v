@@ -25,7 +25,7 @@
 // them in an internal queue/fifo.
 
 module hs32_fetch (
-    input clk,                      // 12 MHz Clock
+    input clk, input reset,
 
     // Memory arbiter interface
     output  wire [31:0] addr,       // Address

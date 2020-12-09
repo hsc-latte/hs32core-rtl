@@ -83,7 +83,7 @@ module hs32_cpu (
     hs32_fetch #(
         .PREFETCH_SIZE(PREFETCH_SIZE)
     ) FETCH(
-        .clk(i_clk),
+        .clk(i_clk), .reset(reset),
         // Memory arbiter interface
         .addr(addr_f), .dtr(dtr_f),
         .stbm(stb_f), .ackm(ack_f), .stlm(stl_f),
@@ -92,15 +92,7 @@ module hs32_cpu (
         // Pipeline controller
         .newpc(newpc), .flush(flush | reset)
     );
-
-    // wire [3:0]  aluop_e;
-    // wire [4:0]  shift_e;
-    // wire [15:0] imm_e;
-    // wire [3:0]  regdst_e;
-    // wire [3:0]  regsrc_e;
-    // wire [3:0]  regopd_e;
-    // wire [1:0]  bank_e;
-    // wire [15:0] ctlsig_e;
+    
     wire [54:0] control;
     wire [23:0] int_line;
 
@@ -118,14 +110,6 @@ module hs32_cpu (
         .reqe(req_ed),
         .rdye(rdy_ed),
         .control(control),
-        // .aluop(aluop_e),
-        // .imm(imm_e),
-        // .shift(shift_e),
-        // .rd(regdst_e),
-        // .rm(regsrc_e),
-        // .rn(regopd_e),
-        // .ctlsig(ctlsig_e),
-        // .bank(bank_e),
         .int_line(int_line)
     );
 
@@ -142,14 +126,6 @@ module hs32_cpu (
 
         // Decode
         .control(control),
-        // .aluop(aluop_e),
-        // .imm(imm_e),
-        // .shift(shift_e),
-        // .rd(regdst_e),
-        // .rm(regsrc_e),
-        // .rn(regopd_e),
-        // .ctlsig(ctlsig_e),
-        // .bank(bank_e),
         
         // Memory arbiter interface
         .stbm(stb_e), .ackm(ack_e), .stlm(stl_e),
