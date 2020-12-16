@@ -171,10 +171,13 @@ module hs32_exec (
         regoutb_s;
     // Register select
     assign regadra =
-        state == `TR1 ?
+        state == `IDLE ?
+            (`CTL_s == `CTL_s_mid || `CTL_s == `CTL_s_mnd ? rd : rm)
+        : rm;
+        /*state == `TR1 ?
         (`CTL_s == `CTL_s_mid || `CTL_s == `CTL_s_mnd ?
             rd : rm)
-        : rm;
+        : rm;*/
     assign regadrb = rn;
 
     //===============================//
