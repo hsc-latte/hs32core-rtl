@@ -20,7 +20,7 @@
 
 `default_nettype none
 
-module mmio(
+module hs32_aic(
     input  wire clk,
     input  wire reset,
 
@@ -32,34 +32,19 @@ module mmio(
     output wire[31:0] dtr,
     input  wire rw,
 
-    // SRAM Interface
-    output wire sstb,
-    input  wire sack,
-    output wire[31:0] saddr,
-    output wire[31:0] sdtw,
-    input  wire[31:0] sdtr,
-    output wire srw,
-
     // Interrupt controller
     input   wire[23:0] interrupts,  // Interrupt lines
     output  wire[31:0] handler,     // ISR address
     output  wire intrq,             // Request interrupt
     output  wire[4:0] vec,          // Interrupt vector
-    output  wire nmi,               // Non maskable interrupt
-
-    // AICT Exposed read interal + external ports
-    input  wire[AICT_NUM_RE*32-1:0] aict_r,
-    output wire[AICT_NUM_RI*32-1:0] aict_w
+    output  wire nmi                // Non maskable interrupt
 );
-    parameter AICT_NUM_RE = 1; // Registers read-only from inside (external)
-    parameter AICT_NUM_RI = 1; // Registers read-only from outside (internal)
-    parameter AICT_LENGTH = AICT_NUM_RE+AICT_NUM_RI+24+1; // 24 IVT + 1 base
 
     // Advanced Interrupt Controller Table
-    reg[31:0] aict[AICT_LENGTH-1:0];
+    reg[31:0] aict[23:0];
 
     // Check if there's interrupt(s)
-    assign intrq = (|interrupts) & (aict[vec + 1][0] | nmi);
+    assign intrq = (|interrupts) & (aict[vec][0] | nmi);
 
     // NMI
     assign nmi = interrupts[0] || interrupts[1];
@@ -90,46 +75,21 @@ module mmio(
         interrupts[20] ? 20 :
         interrupts[21] ? 21 :
         interrupts[22] ? 22 : 23;
-    assign handler = aict[vec + 1] & (~32'b1111);
+    assign handler = aict[vec] & (~32'b1111);
 
-    // Write ready
-    reg wack;
+    // Calculate table index
+    wire[4:0] aict_idx = addr[4:0]-1;
 
-    // AICT is from aict_base to aict_base + AICT_LENGTH*4
-    wire is_aict;
-    assign is_aict = aict[0] <= addr && addr <= aict[0] + AICT_LENGTH*4;
+    // 1 clock cycle
+    assign ack = stb;
+    assign dtr = aict[aict_idx];
 
-    // Calculate the aict index from the address
-    wire[4:0] aict_idx;
-    wire[27:0] __unused___;
-    assign {__unused___, aict_idx } = ((addr-aict[0]) >> 2);
-
-    // Multiplex aict entry and sram signals
-    // Ready is 1 only when reading
-    assign ack = is_aict ? rw ? wack : 1 : sack;
-    assign dtr = is_aict ? aict[aict_idx] : sdtr;
-
-    // Assign all sram output
-    assign srw = rw;
-    assign sstb = stb && !is_aict;
-    assign saddr = addr;
-    assign sdtw = dtw;
-
-    // Reset
+    // Reset and write
     integer i;
     always @(posedge clk) if(reset) begin
-        aict[0] <= 32'h0000_FF00;
-        for(i = 1; i < 25; i++)
+        for(i = 0; i < 24; i++)
             aict[i] <= 0;
-    end
-
-    // Bus logic
-    always @(posedge clk)
-    if(reset) begin
-        wack <= 0;
-    end else if(stb && rw)
-        wack <= 1;
-    else begin
-        wack <= 0;
+    end else if(stb && rw) begin
+        aict[aict_idx] <= dtw;
     end
 endmodule
