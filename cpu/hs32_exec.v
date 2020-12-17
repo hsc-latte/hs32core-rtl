@@ -25,25 +25,17 @@
 `include "./cpu/hs32_xuconst.v"
 
 module hs32_exec (
-    input  wire clk,            // 12 MHz Clock
-    input  wire reset,          // Active Low Reset
-    input  wire req,            // Request line
-    output wire rdy,            // Output ready
+    input   wire clk,           // 12 MHz Clock
+    input   wire reset,         // Active Low Reset
+    input   wire req,           // Request line
+    output  wire rdy,           // Output ready
 
     // Fetch
     output  reg [31:0] newpc,   // New program
     output  reg flush,          // Flush
 
     // Decode
-    input wire [54:0] control,
-    // input   wire [3:0]  aluop,  // ALU Operation
-    // input   wire [4:0]  shift,  // 5-bit shift
-    // input   wire [15:0] imm,    // Immediate value
-    // input   wire [3:0]  rd,     // Register Destination Rd
-    // input   wire [3:0]  rm,     // Register Source Rm
-    // input   wire [3:0]  rn,     // Register Operand Rn
-    // input   wire [15:0] ctlsig, // Control signals
-    // input   wire [1:0]  bank,   // Input bank
+    input   wire [54:0] control,
 
     // Memory arbiter interface
     output  wire [31:0] addr,   // Address
@@ -98,18 +90,19 @@ module hs32_exec (
     //===============================//
 
     // Latch incoming interrupts
-    reg int_latch;
+    reg int_latch, nmi_latch;
     reg[31:0] isr_latch;
     reg[4:0] code_latch;
     always @(posedge clk)
     if(reset)
         int_latch <= 0;
-    else if(state == `INT)
+    else if(state == `INT) begin
         int_latch <= 0;
-    // NMI forces an interrupt, otherwise check interrupt enable
-    else if(intrq && (nmi || !(`MCR_INTEN))) begin
+        nmi_latch <= 0;
+    end else if(intrq) begin
         int_latch <= 1;
         isr_latch <= isr;
+        nmi_latch <= nmi;
         code_latch <= code;
     end
 
@@ -199,10 +192,10 @@ module hs32_exec (
         if(BARREL_SHIFTER) begin
             assign ibus2_sh =
                 shift == 0 ? ibus2 :
-                `CTL_d == `CTL_D_shl ? ibus2 << shift :
-                `CTL_d == `CTL_D_shr ? ibus2 >> shift :
-                `CTL_d == `CTL_D_ssr ? ibus2 >>> shift :
-                ibus2 << shift | ibus2 >> (32-shift);
+                `CTL_D == `CTL_D_shl ? ibus2 << shift :
+                `CTL_D == `CTL_D_shr ? ibus2 >> shift :
+                `CTL_D == `CTL_D_ssr ? ibus2 >>> shift :
+                ibus2 >> shift | ibus2 << (32-shift);
         end else begin
             assign ibus2_sh = ibus2;
         end
@@ -232,7 +225,11 @@ module hs32_exec (
         fault <= 0;
         int_inval <= 0;
     end else case(state)
-        `IDLE: if(int_latch || intrq) begin
+        // NMI forces an interrupt, otherwise check interrupt enable
+        `IDLE: if(
+            (int_latch || intrq) &&
+            ((nmi || nmi_latch) || !(`MCR_INTEN))
+        ) begin
             state <= `INT;
             if(`IS_INT) begin
                 fault <= 1;
@@ -381,6 +378,7 @@ module hs32_exec (
         // Interrupt
         `INT: begin
             lr_i <= `IS_USR ? pc_u : pc_s;
+            `MCR_INTEN <= 0;
             `MCR_USR <= 0;
             `MCR_MDE <= 1;
             `MCR_VEC <= code_latch;
