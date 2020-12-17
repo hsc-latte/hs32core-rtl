@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Wed Dec 09 08:12:41 2020
+[*] Thu Dec 17 00:10:27 2020
 [*]
-[dumpfile] "c:\Users\Kevin\Desktop\Projects\fpga\hsc\rtl\build\dump.vcd"
-[dumpfile_mtime] "Wed Dec 09 08:00:20 2020"
-[dumpfile_size] 136820
-[savefile] "C:\Users\Kevin\Desktop\Projects\fpga\hsc\rtl\bench\rtl\tb_soc.gtkw"
-[timestart] 0
+[dumpfile] "c:\Users\Kevin\Desktop\Projects\fpga\caravel-hs32core\verilog\rtl\hs32cpu\build\dump.vcd"
+[dumpfile_mtime] "Thu Dec 17 00:09:19 2020"
+[dumpfile_size] 87154
+[savefile] "C:\Users\Kevin\Desktop\Projects\fpga\caravel-hs32core\verilog\rtl\hs32cpu\bench\rtl\tb_soc.gtkw"
+[timestart] 28
 [size] 1536 801
-[pos] -191 -191
-*-5.928874 96 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] -1 -1
+*-3.928874 42 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_soc.
 [treeopen] tb_soc.bram_ctl.
 [treeopen] tb_soc.cpu.
@@ -158,9 +158,9 @@ tb_soc.cpu.FETCH.rp[3:0]
 tb_soc.cpu.FETCH.wp[3:0]
 @1401200
 -Fetch
-@800201
+@800200
 -Queue
-@23
+@22
 tb_soc.cpu.FETCH.\fifo[0][31:0]
 tb_soc.cpu.FETCH.\fifo[1][31:0]
 tb_soc.cpu.FETCH.\fifo[2][31:0]
@@ -169,9 +169,9 @@ tb_soc.cpu.FETCH.\fifo[4][31:0]
 tb_soc.cpu.FETCH.\fifo[5][31:0]
 tb_soc.cpu.FETCH.\fifo[6][31:0]
 tb_soc.cpu.FETCH.\fifo[7][31:0]
-@1000201
+@1000200
 -Queue
-@c00200
+@800200
 -Decode
 @28
 tb_soc.cpu.DECODE.clk
@@ -191,6 +191,8 @@ tb_soc.cpu.DECODE.reqe
 [color] 3
 tb_soc.cpu.DECODE.rdye
 tb_soc.cpu.DECODE.full
+@29
+tb_soc.cpu.DECODE.intloop
 @200
 -
 @22
@@ -201,16 +203,16 @@ tb_soc.cpu.DECODE.instd[31:0]
 tb_soc.cpu.DECODE.aluop[3:0]
 @28
 tb_soc.cpu.DECODE.bank[1:0]
-@22
 tb_soc.cpu.DECODE.ctlsig[15:0]
+@22
 tb_soc.cpu.DECODE.imm[15:0]
 tb_soc.cpu.DECODE.rd[3:0]
 tb_soc.cpu.DECODE.rm[3:0]
 tb_soc.cpu.DECODE.rn[3:0]
 tb_soc.cpu.DECODE.shift[4:0]
-@1401200
+@1000200
 -Decode
-@c00200
+@800200
 -Execute
 @28
 tb_soc.cpu.EXEC.clk
@@ -223,7 +225,7 @@ tb_soc.cpu.EXEC.state[3:0]
 @28
 tb_soc.cpu.EXEC.fault
 tb_soc.cpu.EXEC.int_inval
-@c00200
+@800200
 -Module I/O
 @28
 tb_soc.cpu.EXEC.flush
@@ -261,18 +263,18 @@ tb_soc.cpu.EXEC.rw_mem
 -
 @28
 tb_soc.cpu.EXEC.intrq
-@1401200
+@1000200
 -Module I/O
-@c00200
+@800200
 -Internal Bus
 @22
 tb_soc.cpu.EXEC.ibus1[31:0]
 tb_soc.cpu.EXEC.ibus2[31:0]
 tb_soc.cpu.EXEC.obus[31:0]
 tb_soc.cpu.EXEC.aluout[31:0]
-@1401200
+@1000200
 -Internal Bus
-@c00200
+@800200
 -ALU
 @22
 tb_soc.cpu.EXEC.alu_nzcv[3:0]
@@ -286,9 +288,9 @@ tb_soc.cpu.EXEC.alu.i_fl[3:0]
 tb_soc.cpu.EXEC.alu.i_op[3:0]
 tb_soc.cpu.EXEC.alu.o_fl[3:0]
 tb_soc.cpu.EXEC.alu.o_r[31:0]
-@1401200
+@1000200
 -ALU
-@c00200
+@800200
 -Special Registers
 @22
 tb_soc.cpu.EXEC.r_dtrm[31:0]
@@ -300,7 +302,7 @@ tb_soc.cpu.EXEC.lr_i[31:0]
 tb_soc.cpu.EXEC.sp_i[31:0]
 tb_soc.cpu.EXEC.mcr_s[31:0]
 tb_soc.cpu.EXEC.flags[31:0]
-@1401200
+@1000200
 -Special Registers
 @c00200
 -Register Control
@@ -368,6 +370,7 @@ tb_soc.cpu.EXEC.regfile_u.\regs[14][31:0]
 tb_soc.cpu.EXEC.regfile_u.\regs[15][31:0]
 @1401200
 -User Regfile
+@1000200
 -Execute
 [pattern_trace] 1
 [pattern_trace] 0

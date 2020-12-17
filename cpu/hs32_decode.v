@@ -85,15 +85,15 @@ module hs32_decode (
     endgenerate
 
     reg full, r_reqe, r_bsy;
-    assign rdyd = !full | (full & rdye);
-    assign reqe = rdye & (full | r_reqe);
+    assign rdyd = !intloop && (!full | (full & rdye));
+    assign reqe = !(intloop & !full) && (rdye & (full | r_reqe));
     
     always @(posedge clk)
     if(reset) begin
         full <= 0;
         r_reqe <= 0;
         r_bsy <= 0;
-    end else if(!intloop) begin
+    end else begin
         if(reqd && rdyd) begin
             full <= 1;
             r_reqe <= rdye;
@@ -114,7 +114,7 @@ module hs32_decode (
         doint <= 0;
     end else begin
         // Reset interrupts
-        if((intrq || invalid) && rdye) begin
+        if((intrq || invalid) && rdye && !full) begin
             intrq <= 0;
             doint <= 1;
         end
