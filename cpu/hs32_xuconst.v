@@ -91,7 +91,7 @@
 
 // Mode check macros
 `define IS_USR      (`MCR_USR == 1)
-`define IS_SUP      (`MCR_USR == 0)
+`define IS_SUP      (`MCR_USR == 0 && `MCR_MDE == 0)
 `define IS_INT      (`MCR_USR == 0 && `MCR_MDE == 1)
 `define BANK_U      (`CTL_B == 1 && bank == 0)
 `define BANK_S      (`CTL_B == 1 && bank == 1)

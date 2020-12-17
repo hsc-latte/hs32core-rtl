@@ -51,6 +51,9 @@ module hs32_reg (
 
     always @(posedge clk) if(we) begin
         regs[wadr] <= din;
+`ifdef SIM
+        $display($time, " Register write %m %X <- %X", wadr, din);
+`endif
     end
 
     always @(posedge clk) if(!we) begin
