@@ -342,9 +342,11 @@ module hs32_exec (
         // On TW2, then we finished memory access and we just write.
         //         Since TW2 is only for LDR, we don't need to check ctlsigs
         `TW2, `TR1: if(
-            `CTL_s != `CTL_s_mid &&
-            `CTL_s != `CTL_s_mnd &&
-            `CTL_d == `CTL_d_rd
+            state == `TW2 || (
+                `CTL_s != `CTL_s_mid &&
+                `CTL_s != `CTL_s_mnd &&
+                `CTL_d == `CTL_d_rd
+            )
         ) case(rd)
             // Deal with register bankings
             default: begin
