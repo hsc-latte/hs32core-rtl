@@ -121,6 +121,11 @@ module mmio(
         aict[0] <= 32'h0000_FF00;
         for(i = 1; i < 25; i++)
             aict[i] <= 0;
+    end else if(is_aict && stb && rw) begin
+        aict[aict_idx] <= dtw;
+`ifdef SIM
+        $display($time, " AICT write %X <- %X", aict_idx, dtw);
+`endif
     end
 
     // Bus logic

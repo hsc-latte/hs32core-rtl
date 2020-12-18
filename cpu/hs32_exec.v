@@ -106,6 +106,23 @@ module hs32_exec (
         code_latch <= code;
     end
 
+`ifdef SIM
+    always @(*) begin
+        if(fault) begin
+            $display($time, " Fault!");
+        end
+    end
+
+    always @(posedge clk) case(state)
+        `INT: begin
+            $display($time, " Entered interrupt, vec: %X isr: %X", code_latch, nmi_latch);
+        end
+        `INTRET: begin
+            $display($time, " Exited interrupt.");
+        end
+    endcase
+`endif
+
     //===============================//
     // Busses
     //===============================//

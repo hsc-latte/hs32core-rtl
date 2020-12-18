@@ -20,7 +20,7 @@ gpio sources: register, timer 1, timer 2, shift
 [1]     MSR0
 1'b0    wishbone rx (self-REsetting)
 1'b0    wishbone interrupt enable (otherwise ack is hardware generated)
-3'b0    T0 clock source (0=no, 1=clk, 2=clk/2, 3, 8, 64, 256, 1024)
+3'b0    T0 clock source (0=no, 1=clk, 2=clk/8, 64, 256, 1024, fall, rise)
 8'b0    T0 PWM width
 1'b0    T0 PWM mode (0=normal, 1=clear when match)
 3'b0    T1 clock source (see above)

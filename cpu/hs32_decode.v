@@ -41,8 +41,8 @@
 `define HS32_RN        instd[15:12]
 
 module hs32_decode (
-    input clk,                  // 12 MHz Clock
-    input reset,                // Reset
+    input   wire clk,           // 12 MHz Clock
+    input   wire reset,         // Reset
 
     // Fetch
     input   wire [31:0] instd,  // Next instruction
