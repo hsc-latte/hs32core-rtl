@@ -35,8 +35,8 @@ module hs32_fetch (
     input   wire stlm,              // Stall
 
     // Decode
-    output  reg [31:0] instd,       // Next instruction
-    output  reg  reqd,              // Valid input
+    output  wire[31:0] instd,       // Next instruction
+    output  wire reqd,              // Valid input
     input   wire rdyd,              // Valid output
 
     // Pipeline controller
@@ -44,6 +44,7 @@ module hs32_fetch (
     input   wire flush              // Flush
 );
     parameter PREFETCH_SIZE = 2;
+    parameter LOW_WATER = (1 << PREFETCH_SIZE)/2 - 1;
 
     // Program counter and init values
     reg[31:0] pc;
@@ -70,18 +71,23 @@ module hs32_fetch (
     always @(*) full_next = fill_next == { 1'b1, {(PREFETCH_SIZE) {1'b0}} };
 
     // Decode request
+    assign reqd = !(flush) && (refill ? fill > LOW_WATER : fill > 1);
+    assign instd = fifo[rp[PREFETCH_SIZE-1:0]];
     always @(posedge clk)
     if(flush) begin
         rp <= 0;
-        reqd <= 0;
-    end else begin
-        if(rdyd && !(flush) && fill > 1) begin
-            reqd <= 1;
-            instd <= fifo[rp[PREFETCH_SIZE-1:0]];
-            rp <= rp+1;
-        end else begin
-            reqd <= 0;
-        end
+    end else if(rdyd && reqd) begin
+        rp <= rp+1;
+    end
+
+    reg refill;
+    always @(posedge clk)
+    if(flush) begin
+        refill <= 1;
+    end else if(refill && fill > LOW_WATER) begin
+        refill <= 0;
+    end else if(fill < 1) begin
+        refill <= 1;
     end
 
     // Memory request

@@ -84,23 +84,27 @@ module hs32_decode (
         end
     endgenerate
 
-    reg full, r_reqe, r_bsy;
-    assign rdyd = !intloop && (!full | (full & rdye));
-    assign reqe = !(intloop & !full) && (rdye & (full | r_reqe));
+    reg r_reqe, r_rdyd, r_hasnext;
+    assign rdyd = !intloop && r_rdyd;
+    assign reqe = !intloop && r_reqe;
     
     always @(posedge clk)
     if(reset) begin
-        full <= 0;
         r_reqe <= 0;
-        r_bsy <= 0;
+        r_hasnext <= 0;
+        r_rdyd <= 1;
     end else begin
-        if(reqd && rdyd) begin
-            full <= 1;
-            r_reqe <= rdye;
-        end
-        if(rdye) begin
-            full <= 0;
-        end else begin
+        if(rdyd && reqd) begin
+            r_hasnext <= 1;
+            if(rdye && !reqe) begin
+                r_reqe <= 1;
+            end else begin
+                r_rdyd <= 0;
+            end
+        end else if(rdye && r_hasnext) begin
+            r_rdyd <= 1;
+            r_hasnext <= 0;
+        end else if(rdye && !r_hasnext) begin
             r_reqe <= 0;
         end
     end
@@ -114,7 +118,7 @@ module hs32_decode (
         doint <= 0;
     end else begin
         // Reset interrupts
-        if((intrq || invalid) && rdye && !full) begin
+        if((intrq || invalid) && rdye) begin
             intrq <= 0;
             doint <= 1;
         end
@@ -124,7 +128,7 @@ module hs32_decode (
         end
 
         /* If Ready Received */
-        if (((reqd && rdyd) || full) && !intloop) begin
+        if (( (rdyd && reqd) || (rdye && r_hasnext) ) && !intloop) begin
             /* ISA OP Code Decoding */
 
             /*************************************************************************/

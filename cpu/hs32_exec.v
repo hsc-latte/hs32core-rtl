@@ -115,7 +115,7 @@ module hs32_exec (
 
     always @(posedge clk) case(state)
         `INT: begin
-            $display($time, " Entered interrupt, vec: %X isr: %X", code_latch, nmi_latch);
+            $display($time, " Entered interrupt, vec: %X isr: %X", code_latch, isr_latch);
         end
         `INTRET: begin
             $display($time, " Exited interrupt.");
@@ -524,12 +524,8 @@ module hs32_exec (
                 `CTL_d == `CTL_d_rd &&
                 `BANK_F && `CTL_i
             ) begin
-                flags <= obus;
-            end else if(
-                state == `TR1 &&
-                `CTL_d == `CTL_d_rd &&
-                `CTL_f == 1'b1
-            ) begin
+                flags <= obus | 32'h8001;
+            end else begin
                 flags <= { alu_nzcv, 12'b0, branch_conds };
             end
             // Restore flags

@@ -57,7 +57,7 @@ Code    User    Super   IRQ         Description
 0000    r0_u    r0_s    (shared)    General purpose
 ...     ...     ...     ...         ...
 1011    r11_u   r11_s   (shared)    ...
-1100    r12_u   mcr_s   ivt_i       Machine Configuration/Interrupt Vector Table
+1100    r12_u   mcr_s   ...         Machine Configuration/Interrupt Vector Table
 1101    sp_u    sp_s    sp_i        General purpose/Stack pointer (optional)
 1110    lr_u    lr_s    lr_i        Link register
 1111    pc_u    pc_s    (shared)    Program counter
