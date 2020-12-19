@@ -576,7 +576,7 @@ module hs32_exec (
         `ALU_N ^ `ALU_V,                // LT
         !(`ALU_N ^ `ALU_V),             // GE
         !`ALU_C | `ALU_Z,               // BE
-        `ALU_C | !`ALU_Z,               // AB
+        `ALU_C & !`ALU_Z,               // AB
         !`ALU_V,                        // NV
         `ALU_V,                         // OV
         !`ALU_N,                        // NS

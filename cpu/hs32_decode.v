@@ -86,7 +86,7 @@ module hs32_decode (
 
     reg r_reqe, r_rdyd, r_hasnext;
     assign rdyd = !intloop && r_rdyd;
-    assign reqe = !intloop && r_reqe;
+    assign reqe = !intloop && r_hasnext;
     
     always @(posedge clk)
     if(reset) begin
