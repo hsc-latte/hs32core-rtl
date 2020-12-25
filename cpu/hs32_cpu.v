@@ -55,6 +55,7 @@ module hs32_cpu (
     parameter IMUL = 0;
     parameter BARREL_SHIFTER = 0;
     parameter PREFETCH_SIZE = 3; // Depth of 2^PREFETCH_SIZE instructions
+    parameter LOW_WATER = (1 << PREFETCH_SIZE)/2 - 1;
     
     wire[31:0] newpc;
 
@@ -81,7 +82,8 @@ module hs32_cpu (
     wire[31:0] inst_d;
     wire req_d, rdy_d;
     hs32_fetch #(
-        .PREFETCH_SIZE(PREFETCH_SIZE)
+        .PREFETCH_SIZE(PREFETCH_SIZE),
+        .LOW_WATER(LOW_WATER)
     ) FETCH(
         .clk(i_clk), .reset(reset),
         // Memory arbiter interface
@@ -95,6 +97,7 @@ module hs32_cpu (
     
     wire [54:0] control;
     wire [23:0] int_line;
+    wire ii;
 
     // OR the interrupt line from the exec and decode
     assign interrupts = int_line | { 22'b0, int_inval, 1'b0 };
@@ -110,7 +113,8 @@ module hs32_cpu (
         .reqe(req_ed),
         .rdye(rdy_ed),
         .control(control),
-        .int_line(int_line)
+        .int_line(int_line),
+        .ii(ii)
     );
 
     wire req_ed, rdy_ed;
@@ -139,6 +143,7 @@ module hs32_cpu (
         .code(vec),
         .iack(iack),
         .nmi(nmi),
+        .ii(ii),
 
         // Misc
         .userbit(userbit),

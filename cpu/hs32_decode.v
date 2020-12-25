@@ -57,7 +57,8 @@ module hs32_decode (
     input  wire rdye,
 
     // Interrupts
-    output wire [23:0] int_line
+    output wire [23:0] int_line,
+    output reg ii
 );
     parameter IMUL = 0;
 
@@ -116,6 +117,7 @@ module hs32_decode (
         intrq <= 0;
         intloop <= 0;
         doint <= 0;
+        ii <= 0;
     end else begin
         // Reset interrupts
         if((intrq || invalid) && rdye) begin
@@ -616,6 +618,7 @@ module hs32_decode (
                     intrq <= 1;
                     intloop <= 1;
                     imm <= `HS32_IMM;
+                    ii <= 1;
                 end
             endcase
         end

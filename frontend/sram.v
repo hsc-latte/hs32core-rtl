@@ -1,12 +1,32 @@
+/**
+ * Copyright (c) 2020 The HSC Core Authors
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * @file   sram.v
+ * @author Kevin Dai <kevindai02@outlook.com>
+ * @date   Created on December 09 2020, 11:48 AM
+ */
+
 module ext_sram (
     input clk, input reset,
 
     // Request interface
-    output  reg  ready,
-    input   wire valid,
-    input   wire rw, // Write = 1
-    input   wire[31:0] addri,
-    input   wire[31:0] dtw,
+    output  reg  ack,
+    input   wire stb,
+    input   wire i_rw, // Write = 1
+    input   wire[31:0] i_addr,
+    input   wire[31:0] i_dtw,
     output  reg [31:0] dtr,
 
     // External IO, all active > HIGH <
@@ -37,14 +57,22 @@ module ext_sram (
     */
 
     // For byte addressing headaches
-    reg addrl;
-    reg lastble;
-    reg hasinit;
+    reg addrl, lastble, hasinit;
     wire ble;
     reg[3:0] mask;
     reg[31:0] addr;
     reg[2:0] state;
 
+    // Latched inputs
+    wire[31:0] addri, dtw;
+    wire rw;
+    reg[31:0] r_addr, r_dtw;
+    reg r_rw;
+    assign addri = state == 0 ? i_addr : r_addr;
+    assign dtw = state == 0 ? i_dtw : r_dtw;
+    assign rw = state == 0 ? i_rw : r_rw;
+
+    // Bleh
     assign ble = !(mask[1] | !rw);
 
     // Generate SRAM_LATCH_LAZY
@@ -57,10 +85,11 @@ module ext_sram (
         addr    <= 0;
         lastble <= 0;
         hasinit <= 0;
+        isout <= 0;
     end else case(state)
         // T1
         3'b000: begin
-            state   <= valid ?
+            state   <= stb ?
                 // We can skip 1 cycle if the MSBs is the same
                 ({ ble, addr[31:17] } == { lastble, addri[31:17] }) && hasinit
                 ? 3'b010 : 3'b001 : 0;
@@ -68,9 +97,12 @@ module ext_sram (
             addrl   <= addri[0];
             mask    <= addri[0] && !rw ? 4'b0001 : 4'b0011;
             addr    <= addri;
-            isout   <= valid;
+            r_addr  <= i_addr;
+            r_rw    <= i_rw;
+            r_dtw   <= i_dtw;
+            isout   <= stb;
             oe      <= 0;
-            ready   <= 0;
+            ack     <= 0;
         end
         // T2
         3'b001: begin
@@ -103,7 +135,7 @@ module ext_sram (
         3'b100: begin
             state   <= mask[3] || reset ? 3'b000 : 3'b101;
             mask    <= mask[0] ? addrl  && !rw ? 4'b0110 : 4'b1100 : 4'b1000;
-            ready   <= !reset && mask[3];
+            ack     <= !reset && mask[3];
             we      <= 0;
             addr    <= addr + 2;        
             lastble <= ble;
@@ -119,9 +151,9 @@ module ext_sram (
                 { ble, addr[31:17] } == { lastble, addri[31:17] }
                 ? 3'b010 : 3'b001;
             dout    <= addr[16:1];
-            isout   <= valid;
+            isout   <= 1;
             oe      <= 0;
-            ready   <= 0;
+            ack     <= 0;
         end
         // So Anthony doesn't complain
         default: begin

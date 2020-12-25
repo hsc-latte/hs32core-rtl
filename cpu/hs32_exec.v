@@ -47,6 +47,7 @@ module hs32_exec (
     output  reg  rw_mem,        // Read write
 
     // Interrupts
+    input   wire ii,
     input   wire intrq,         // Interrupt signal
     input   wire nmi,           // Non maskable?
     input   wire [31:0] isr,    // Interrupt handler
@@ -113,6 +114,19 @@ module hs32_exec (
         end
     end
 
+    // Detect mcr change
+    reg[31:0] sim_ff[1:0];
+    initial sim_ff[0] = 0;
+    initial sim_ff[1] = 0;
+    always @(posedge clk) begin
+        sim_ff[0] <= mcr_s;
+        sim_ff[1] <= sim_ff[0];
+    end
+    always @(*) begin
+        $monitor($time, " MCR set to %X (mode %b)", mcr_s, mcr_s[2:1]);
+    end
+
+    // Interrupt
     always @(posedge clk) case(state)
         `INT: begin
             $display($time, " Entered interrupt, vec: %X isr: %X", code_latch, isr_latch);
@@ -394,7 +408,7 @@ module hs32_exec (
         end
         // Interrupt
         `INT: begin
-            lr_i <= `IS_USR ? pc_u : pc_s;
+            lr_i <= (`IS_USR ? pc_u : pc_s) + (ii ? 4 : 0);
             `MCR_INTEN <= 0;
             `MCR_USR <= 0;
             `MCR_MDE <= 1;

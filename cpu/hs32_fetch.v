@@ -62,9 +62,9 @@ module hs32_fetch (
         for(i = 0; i < (1<<PREFETCH_SIZE); i++)
             $dumpvars(1, fifo[i]);
     end
-    initial begin
+    always @(*) begin
         if(flush) begin
-            $display($time, " Flush, newpc: %X", newpc);
+            //$display($time, " Flush, newpc: %X", newpc);
         end
     end
 `endif
