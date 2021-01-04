@@ -220,13 +220,19 @@ module hs32_exec (
         : aluout;
     // Generate barrel shifter
     generate
-        if(BARREL_SHIFTER) begin
+        if(BARREL_SHIFTER == 1) begin
             assign ibus2_sh =
                 shift == 0 ? ibus2 :
                 `CTL_D == `CTL_D_shl ? ibus2 << shift :
                 `CTL_D == `CTL_D_shr ? ibus2 >> shift :
                 `CTL_D == `CTL_D_ssr ? ibus2 >>> shift :
                 ibus2 >> shift | ibus2 << (32-shift);
+        end else if(BARREL_SHIFTER == 2) begin
+            assign ibus2_sh =
+                `CTL_D == `CTL_D_shl ? ibus2 << shift :
+                `CTL_D == `CTL_D_shr ? ibus2 >> shift :
+                `CTL_D == `CTL_D_ssr ? ibus2 >>> shift :
+                ibus2;
         end else begin
             assign ibus2_sh = ibus2;
         end

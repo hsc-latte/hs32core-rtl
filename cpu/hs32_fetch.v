@@ -76,7 +76,13 @@ module hs32_fetch (
     always @(*) full_next = fill_next == { 1'b1, {(PREFETCH_SIZE) {1'b0}} };
 
     // Decode request
-    assign reqd = !(flush) && (refill ? fill > LOW_WATER : fill > 1);
+    generate
+        if(LOW_WATER == 0) begin
+            assign reqd = !(flush) && (fill > 1);
+        end else begin
+            assign reqd = !(flush) && (refill ? fill > LOW_WATER : fill > 1);
+        end
+    endgenerate
     assign instd = fifo[rp[PREFETCH_SIZE-1:0]];
     always @(posedge clk)
     if(flush) begin

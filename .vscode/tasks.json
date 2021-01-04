@@ -25,6 +25,11 @@
             "args": [
                 "--hx8k",
                 "--package", "cb132",
+                "--freq", "16",
+                "--opt-timing",
+                //"--router", "router1",
+                //"--placer", "sa",
+                //"--starttemp", "1000",
                 "--json", "build/hardware.json",
                 "--asc", "build/hardware.asc",
                 "--pcf", "pins.pcf"

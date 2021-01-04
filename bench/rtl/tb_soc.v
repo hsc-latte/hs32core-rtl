@@ -20,85 +20,43 @@
 
 `ifdef SIM
 
-`include "cpu/hs32_cpu.v"
-`include "soc/bram_ctl.v"
-`include "frontend/mmio.v"
+`include "soc/main.v"
 
 `timescale 1ns / 1ns
 module tb_soc;
     parameter PERIOD = 2;
-
     reg clk = 1;
-    reg reset = 1;
-
     always #(PERIOD/2) clk=~clk;
-
     initial begin
         $dumpfile("tb_soc.vcd");
-        $dumpvars(0, cpu, bram_ctl, mmio_unit);
-
-        // Power on reset, no touchy >:[
-        #(PERIOD*2)
-        reset <= 0;
-        #(PERIOD*200);
+        $dumpvars(0, top);
+        repeat (1000) @(posedge clk);
         $finish;
     end
 
-    wire[31:0] addr, dread, dwrite;
-    wire rw, stb, ack, flush;
-
-    hs32_cpu #(
-        .IMUL(1), .BARREL_SHIFTER(1), .PREFETCH_SIZE(3)
-    ) cpu (
-        .i_clk(clk), .reset(reset),
-        // External interface
-        .addr(addr), .rw(rw),
-        .din(dread), .dout(dwrite),
-        .stb(stb), .ack(ack),
-
-        .interrupts(inte),
-        .iack(), .handler(isr),
-        .intrq(irq), .vec(ivec),
-        .nmi(nmi),
-
-        .flush(flush)
-    );
-
-    wire [23:0] inte;
-    wire [4:0] ivec;
-    wire [31:0] isr;
-    wire irq, nmi;
-
-    mmio #(
-        .AICT_NUM_RE(0), .AICT_NUM_RI(0)
-    ) mmio_unit (
-        .clk(clk), .reset(reset),
-        // CPU
-        .stb(stb), .ack(ack),
-        .addr(addr), .dtw(dwrite), .dtr(dread), .rw(rw),
-        // RAM
-        .sstb(ram_stb), .sack(ram_ack), .srw(ram_rw),
-        .saddr(ram_addr), .sdtw(ram_dwrite), .sdtr(ram_dread),
-        // Interrupt controller
-        .interrupts(inte), .handler(isr), .intrq(irq), .vec(ivec), .nmi(nmi)
-    );
-
-    wire[31:0] ram_addr, ram_dread, ram_dwrite;
-    wire ram_rw, ram_stb, ram_ack;
-
-    soc_bram_ctl #(
-        .addr_width(8),
+    wire ledr, ledg;
+    wire[8:0] gpio;
+    main #(
         .data0("../bench/bram0.hex"),
         .data1("../bench/bram1.hex"),
         .data2("../bench/bram2.hex"),
         .data3("../bench/bram3.hex")
-    ) bram_ctl(
-        .i_clk(clk),
-        .i_reset(reset || flush),
-        .i_addr(ram_addr[7:0]), .i_rw(ram_rw),
-        .o_dread(ram_dread), .i_dwrite(ram_dwrite),
-        .i_stb(ram_stb), .o_ack(ram_ack)
+    ) top (
+        .CLK(clk),
+        .LEDR_N(ledr), .LEDG_N(ledg),
+        .GPIO9(1'b1), .GPIO8(gpio[8]),
+        .GPIO7(gpio[7]), .GPIO6(gpio[6]),
+        .GPIO5(gpio[5]), .GPIO4(gpio[4]), 
+        .GPIO3(gpio[3]), .GPIO2(gpio[2]), 
+        .GPIO1(gpio[1]), .GPIO0(gpio[0])
     );
+
+    always @(ledr, ledg) begin
+		#1 $display("LED R,G state = %b", ledr, ledg);
+	end
+    always @(gpio) begin
+        #1 $display("GPIO state = %b", gpio);
+    end
 endmodule
 
 `endif

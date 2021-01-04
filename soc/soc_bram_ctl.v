@@ -35,10 +35,10 @@ module soc_bram_ctl (
     output  reg  o_ack
 );
     parameter addr_width = 8;
-    parameter data0 = "bram0.hex";
-    parameter data1 = "bram1.hex";
-    parameter data2 = "bram2.hex";
-    parameter data3 = "bram3.hex";
+    parameter data0 = "bench/bram0.hex";
+    parameter data1 = "bench/bram1.hex";
+    parameter data2 = "bench/bram2.hex";
+    parameter data3 = "bench/bram3.hex";
 
     // 4 addresses for each bram
     // Selects between current dword and next dword

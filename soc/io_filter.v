@@ -11,35 +11,36 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.
+ * limitations under the License. SPDX-License-Identifier: Apache-2.0
  * 
- * @file   bram.v
+ * @file   io_filter.v
  * @author Kevin Dai <kevindai02@outlook.com>
- * @date   Created on October 26 2020, 7:12 PM
+ * @date   Created on December 17 2020, 8:36 PM
  */
 
-module soc_bram (
-    input clk,
-    input we,
-    input wire [addr_width-1:0] addr,
-    input wire [data_width-1:0] din,
-    output reg [data_width-1:0] dout
+// TODO: Hahaha too lazy to do it
+module io_filter (
+    input wire clk,
+    input wire rst,
+    input wire a,
+    output wire b,
+    output reg rise,
+    output reg fall
 );
-    parameter addr_width = 8;
-    parameter data_width = 8;
-    parameter data = "bench/bram0.hex";
+    reg[1:0] sync;
+    assign b = sync[1];
 
-    reg[data_width-1:0] mem[(1<<addr_width)-1:0];
-    
-    initial begin
-        $readmemh(data, mem);
+    always @(posedge clk) if(rst) begin
+        sync <= 0;
+    end else begin
+        sync <= { sync[0], a };
     end
-
-    always @(posedge clk) begin
-        if(we) begin
-            mem[addr] <= din;
-        end else begin
-            dout <= mem[addr];
-        end
+    
+    always @(posedge clk) if(rst) begin
+        rise <= 0;
+        fall <= 0;
+    end else begin
+        rise <= sync == 2'b01;
+        fall <= sync == 2'b10;
     end
 endmodule
