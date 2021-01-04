@@ -12,7 +12,9 @@ hardware.*
 # random stuff
 log.txt
 *.dot
+*.asm
 
+# testbench, openlane
 bench/formal/*/
 openlane/*/runs/
 gds/

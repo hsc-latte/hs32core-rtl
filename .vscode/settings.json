@@ -1,7 +1,7 @@
 {
     "psi-header.templates": [
         {
-            "language": "verilog",
+            "language": "*",
             "template": [
                 "Copyright (c) <<year>> The HSC Core Authors",
                 "",
