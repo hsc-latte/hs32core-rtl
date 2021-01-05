@@ -24,13 +24,12 @@
 
 `timescale 1ns / 1ns
 module tb_soc;
-    parameter PERIOD = 2;
-    reg clk = 1;
-    always #(PERIOD/2) clk=~clk;
+    reg clk = 0;
+    always #1 clk=~clk;
     initial begin
         $dumpfile("tb_soc.vcd");
         $dumpvars(0, top);
-        repeat (1000) @(posedge clk);
+        repeat (2000) @(posedge clk);
         $finish;
     end
 
@@ -42,7 +41,7 @@ module tb_soc;
         .data2("../bench/bram2.hex"),
         .data3("../bench/bram3.hex")
     ) top (
-        .CLK(clk),
+        .CLK(clk), .RST_N(1'b1),
         .LEDR_N(ledr), .LEDG_N(ledg),
         .GPIO9(1'b1), .GPIO8(gpio[8]),
         .GPIO7(gpio[7]), .GPIO6(gpio[6]),

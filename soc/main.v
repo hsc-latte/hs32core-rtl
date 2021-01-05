@@ -18,21 +18,29 @@
  * @date   Created on October 29 2020, 6:15 PM
  */
 
+`define FPGA
+
 `include "cpu/hs32_cpu.v"
 `include "cpu/hs32_aic16.v"
 `include "soc/soc_bram_ctl.v"
 `include "soc/dev_intercon.v"
 `include "soc/dev_gpio8.v"
+`include "soc/dev_timer.v"
+`include "soc/dev_uart.v"
 
 module main (
     input   wire CLK,
+    input   wire RST_N,
     input   wire RX,
     output  wire TX,
     output  wire LEDR_N,
     output  wire LEDG_N,
 
+    // Input button (GPIO9)
+    input wire GPIO9,
+    
     // GPIO
-    input wire GPIO9, inout wire GPIO8,
+    inout wire GPIO8,
     inout wire GPIO7, inout wire GPIO6, inout wire GPIO5, inout wire GPIO4,
     inout wire GPIO3, inout wire GPIO2, inout wire GPIO1, inout wire GPIO0
 );
@@ -40,21 +48,16 @@ module main (
     parameter data1 = "bench/bram1.hex";
     parameter data2 = "bench/bram2.hex";
     parameter data3 = "bench/bram3.hex";
+    parameter RST_BITS = 3;
 
     wire clk = CLK;
-    reg rst, state;
-    initial rst = 0;
-    initial state = 0;
-
+    reg[RST_BITS-1:0] ctr = 0;
     always @(posedge clk) begin
-        if(!state) begin
-            rst <= 1;
-            if(rst) begin
-                state <= 1;
-            end
+        if(!ctr[RST_BITS-1]) begin
+            ctr <= ctr + 1;
         end
-        else rst <= 0;
     end
+    wire rst = ~ctr[RST_BITS-1] | ~RST_N;
 
     //===============================//
     // Main CPU core
@@ -91,17 +94,21 @@ module main (
 
     wire[7:0] mmio_addr;
     dev_intercon #(
-        .NS(2),
+        .NS(4),
         .BASE({
             { 1'b0, 7'b0 },
-            { 1'b1, 2'b00, 5'b0 }
+            { 1'b1, 2'b00, 5'b0 },
+            { 1'b1, 2'b01, 1'b0, 4'b0 },
+            { 1'b1, 2'b01, 1'b1, 4'b0 }
         }),
         .MASK({
             { 1'b1, 7'b0 },
-            { 1'b1, 2'b11, 5'b0 }
+            { 1'b1, 2'b11, 5'b0 },
+            { 1'b1, 2'b11, 1'b1, 4'b0 },
+            { 1'b1, 2'b11, 1'b1, 4'b0 }
         }),
         .MASK_LEN(8),
-        .LIMITS(8)
+        .LIMITS(BRAM_ADDR)
     ) mmio_conn (
         .clk(clk), .reset(rst), .userbit(userbit),
         
@@ -111,9 +118,9 @@ module main (
         .i_rw(rw), .i_dtw(dwrite),
 
         // Devices
-        .i_dtr({ aic_dtr, gpt_dtr }),
-        .i_ack({ aic_ack, gpt_ack }),
-        .o_stb({ aic_stb, gpt_stb }),
+        .i_dtr({ aic_dtr, gpt_dtr, t0_dtr, uart_dtr }),
+        .i_ack({ aic_ack, gpt_ack, t0_ack, uart_ack }),
+        .o_stb({ aic_stb, gpt_stb, t0_stb, uart_stb }),
         .o_addr(mmio_addr),
 
         // SRAM
@@ -146,7 +153,13 @@ module main (
         .intrq(irq), .vec(ivec), .nmi(nmi)
     );
 
-    wire[23:0] hw_irq = 0;
+    wire[23:0] hw_irq = {
+        8'b0,
+        gpt_irqr,
+        gpt_irqf,
+        tn_ints,
+        12'b0
+    };
 
     //===============================//
     // GPIO
@@ -181,8 +194,10 @@ module main (
         .io_irqf(gpt_irqf)
     );
 
+    wire io0 = t0_io_oe ? t0_io_out : io_out_buf[0];
+
     // GPIO assignments
-    assign GPIO0 = io_oeb_buf[0] ? io_out_buf[0] : 1'bz;
+    assign GPIO0 = io_oeb_buf[0] ? io0 : 1'bz;
     assign GPIO1 = io_oeb_buf[1] ? io_out_buf[1] : 1'bz;
     assign GPIO2 = io_oeb_buf[2] ? io_out_buf[2] : 1'bz;
     assign GPIO3 = io_oeb_buf[3] ? io_out_buf[3] : 1'bz;
@@ -201,14 +216,58 @@ module main (
     };
 
     //===============================//
+    // Timer
+    //===============================//
+
+    localparam T0_IO_NUM = 0;
+    wire t0_stb, t0_ack;
+    wire[31:0] t0_dtr;
+    wire[1:0] tn_ints;
+
+    // Timer 0
+    wire t0_io_out, t0_io_oe;
+    dev_timer #(
+        .TIMER_BITS(16)
+    ) dev_timer0 (
+        .clk(clk), .reset(rst),
+        .int_match(tn_ints[0]),
+        .int_ovf(tn_ints[1]),
+        .io(t0_io_out),
+        .io_oe(t0_io_oe),
+        .io_risen(io_in_rise[T0_IO_NUM]),
+        .io_fallen(io_in_fall[T0_IO_NUM]),
+        .we(rw), .stb(t0_stb), .ack(t0_ack),
+        .addr(mmio_addr[3:2]),
+        .dtw(dwrite), .dtr(t0_dtr)
+    );
+
+    //===============================//
+    // UART
+    //===============================//
+
+    wire uart_stb, uart_ack;
+    wire[31:0] uart_dtr;
+
+    dev_uart uart(
+        .clk(clk), .reset(rst),
+        .rx(RX), .tx(TX),
+        .stb(uart_stb), .ack(uart_ack),
+        .we(rw), .addr(mmio_addr[3:2]),
+        .dtw(dwrite), .dtr(uart_dtr),
+        .irq()
+    );
+
+    //===============================//
     // Internal SRAM controller
     //===============================//
+
+    localparam BRAM_ADDR = 12;
 
     wire[31:0] ram_addr, ram_dread, ram_dwrite;
     wire ram_rw, ram_stb, ram_ack;
 
     soc_bram_ctl #(
-        .addr_width(8),
+        .addr_width(BRAM_ADDR),
         .data0(data0),
         .data1(data1),
         .data2(data2),
@@ -216,7 +275,7 @@ module main (
     ) bram_ctl(
         .i_clk(clk),
         .i_reset(rst || flush),
-        .i_addr(ram_addr[7:0]), .i_rw(ram_rw),
+        .i_addr(ram_addr[BRAM_ADDR-1:0]), .i_rw(ram_rw),
         .o_dread(ram_dread), .i_dwrite(ram_dwrite),
         .i_stb(ram_stb), .o_ack(ram_ack)
     );

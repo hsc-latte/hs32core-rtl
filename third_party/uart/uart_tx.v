@@ -123,6 +123,9 @@ always @ (posedge clock_i) begin
             write_has_triggered <= 1'b1;
 
             state <= STATE_SEND_PACKET;
+`ifdef SIM
+        $display($time, " UART transmit 0x%X (%c)", data_i, data_i);
+`endif
           end
         end
 

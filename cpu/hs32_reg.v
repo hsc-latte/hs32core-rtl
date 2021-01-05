@@ -39,6 +39,8 @@ module hs32_reg (
     parameter addr_width = 4;
     parameter data_width = 32;
 
+    // RAM4K have max data width of 16 bits
+    // 2 RW ports * 2 Half word ports = 4 RAM4K blocks
     reg[data_width-1:0] regs[(1<<addr_width)-1:0];
 
 `ifdef SIM
@@ -46,6 +48,14 @@ module hs32_reg (
     initial begin
         for(i = 0; i < (1<<addr_width); i++)
             $dumpvars(1, regs[i]);
+    end
+`endif
+    
+`ifdef FPGA
+    integer j;
+    initial begin
+        for(j = 0; j < (1<<addr_width); j++)
+            regs[j] <= 0;
     end
 `endif
 

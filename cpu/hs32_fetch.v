@@ -64,7 +64,7 @@ module hs32_fetch (
     end
     always @(*) begin
         if(flush) begin
-            //$display($time, " Flush, newpc: %X", newpc);
+            $display($time, " Flush, newpc: %X", newpc);
         end
     end
 `endif
