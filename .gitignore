@@ -13,6 +13,8 @@ hardware.*
 log.txt
 *.dot
 *.asm
+*.hex
+out.v
 
 # testbench, openlane
 bench/formal/*/

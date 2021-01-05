@@ -66,6 +66,8 @@
             "label": "Build all",
             "detail": "Build everything all at once",
             "dependsOrder": "sequence",
+            "type": "shell",
+            "command": "echo Hi",
             "dependsOn": [ "1. yosys", "2. nextpnr", "3. icepack" ],
             "group": {
                 "kind": "build",

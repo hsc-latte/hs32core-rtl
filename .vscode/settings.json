@@ -35,5 +35,9 @@
             "blankLinesAfter": 1,
             "forceToTop": true
         }
+    ],
+    "verilog.linting.linter": "verilator",
+    "grammarly.userWords": [
+        "rx"
     ]
 }
