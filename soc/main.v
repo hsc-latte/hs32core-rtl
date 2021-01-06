@@ -48,7 +48,7 @@ module main (
     parameter data1 = "bench/bram1.hex";
     parameter data2 = "bench/bram2.hex";
     parameter data3 = "bench/bram3.hex";
-    parameter RST_BITS = 3;
+    parameter RST_BITS = 16;
 
     wire clk = CLK;
     reg[RST_BITS-1:0] ctr = 0;
@@ -206,7 +206,7 @@ module main (
     assign GPIO6 = io_oeb_buf[6] ? io_out_buf[6] : 1'bz;
     assign GPIO7 = io_oeb_buf[7] ? io_out_buf[7] : 1'bz;
     assign GPIO8 = io_oeb_buf[8] ? io_out_buf[8] : 1'bz;
-    assign LEDR_N = ~io_out_buf[10];
+    assign LEDR_N = ~(io_out_buf[10] | rst);
     assign LEDG_N = ~io_out_buf[11];
     assign io_in = {
         io_out_buf[11], io_out_buf[10],

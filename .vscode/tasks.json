@@ -12,7 +12,7 @@
             "args": [
                 "-QT",
                 "-D${input:type}",
-                "-p", "synth_ice40 -json build/hardware.json",
+                "-p", "synth_ice40 -retime -relut -abc2 -json build/hardware.json",
                 "top.v"
             ],
             "problemMatcher": []
