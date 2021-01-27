@@ -22,6 +22,8 @@ const fs = require('fs');
 
 const blinky = [
     '2400FF00', // MOV r0 <- 0xFF00 ; AICT base address
+    '24100FFF', // MOV r1 <- 0x0FFF ; Set GPIO mode out
+    '34100080', // STR [r0+80] <- r1
     '241016E3', // MOV r1 <- 0x16E3 ; Timer match ~ 1 Hz
     '2420002D', // MOV r2 <- 0x2D   ; Timer config = 01 01 101 (toggle normal 1024)
     '341000A4', // STR [r0+0xA4] <- r1
