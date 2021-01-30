@@ -83,12 +83,10 @@ module ext_sram (
     if(reset) begin
         state   <= 0;
         mask    <= 0;
-        addrl   <= 0;
         addr    <= 0;
         lastble <= 0;
         hasinit <= 0;
         isout   <= 0;
-        ctr     <= 0;
         ack     <= 0;
     end else case(state)
         // T1
@@ -173,9 +171,9 @@ module ext_sram (
     // Negedge signals
     always @(negedge clk)
     if(reset) begin
-        ale0_negedge <= 0;
-        ale1_negedge <= 0;
-        oe_negedge <= 0;
+        //ale0_negedge <= 0;
+        //ale1_negedge <= 0;
+        //oe_negedge <= 0;
     end else case(state)
         // Before T1
         3'b000, 3'b101: begin
