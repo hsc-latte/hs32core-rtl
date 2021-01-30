@@ -13,6 +13,7 @@
                 "-QT",
                 "-D${input:type}",
                 "-p", "synth_ice40 -retime -relut -abc2 -json build/hardware.json",
+                //"-p", "synth_ice40 -relut -abc2 -json build/hardware.json",
                 "top.v"
             ],
             "problemMatcher": []
@@ -28,8 +29,8 @@
                 "--freq", "16",
                 "--opt-timing",
                 "--router", "router1",
-                "--placer", "sa",
-                "--starttemp", "1000",
+                //"--placer", "sa",
+                //"--starttemp", "1000",
                 "--json", "build/hardware.json",
                 "--asc", "build/hardware.asc",
                 "--pcf", "pins.pcf"

@@ -27,6 +27,7 @@
 `include "soc/dev_gpio8.v"
 `include "soc/dev_timer.v"
 `include "soc/dev_uart.v"
+`include "frontend/sram.v"
 
 module main (
     input   wire CLK,
@@ -42,7 +43,20 @@ module main (
     // GPIO
     inout wire GPIO8,
     inout wire GPIO7, inout wire GPIO6, inout wire GPIO5, inout wire GPIO4,
-    inout wire GPIO3, inout wire GPIO2, inout wire GPIO1, inout wire GPIO0
+    inout wire GPIO3, inout wire GPIO2, inout wire GPIO1, inout wire GPIO0,
+
+    // I/O Bus
+    inout IO0, inout IO1, inout IO2, inout IO3, inout IO4,
+    inout IO5, inout IO6, inout IO7, inout IO8, inout IO9,
+    inout IO10, inout IO11, inout IO12, inout IO13,
+    inout IO14, inout IO15,
+
+    // Control signals
+    output OE_N, output WE_N, output ALE0, output ALE1, output BHE_N,
+
+    // OE BYTEn
+    output reg OE_BY0_N, output reg OE_BY1_N,
+    output reg OE_BY2_N, output reg OE_BY3_N
 );
     parameter data0 = "bench/bram0.hex";
     parameter data1 = "bench/bram1.hex";
@@ -58,6 +72,28 @@ module main (
         end
     end
     wire rst = ~ctr[RST_BITS-1] | ~RST_N;
+
+    // Address latch OE pulldown
+    initial OE_BY0_N = 0;
+    initial OE_BY1_N = 0;
+    initial OE_BY2_N = 0;
+    initial OE_BY3_N = 0;
+
+    //===============================//
+    // External I/O Bus Signals
+    //===============================//
+
+    wire we, oe, oe_neg, ale0_neg, ale1_neg, bhe, isout;
+    wire[15:0] data_in;
+    wire[15:0] data_out;
+    assign { IO15, IO14, IO13, IO12, IO11, IO10, IO9, IO8,
+             IO7, IO6, IO5, IO4, IO3, IO2, IO1, IO0 } = isout ? data_out : 16'bz;
+    assign data_in = { IO15, IO14, IO13, IO12, IO11, IO10, IO9, IO8, IO7, IO6, IO5, IO4, IO3, IO2, IO1, IO0 };
+    assign OE_N = !(oe & oe_neg);
+    assign WE_N = !we;
+    assign ALE0 = ale0_neg;
+    assign ALE1 = ale1_neg;
+    assign BHE_N = !bhe;
 
     //===============================//
     // Main CPU core
@@ -127,7 +163,7 @@ module main (
         .sstb(ram_stb), .sack(ram_ack), .sdtr(ram_dread),
 
         // Buf
-        .estb(), .eack(1'b1), .edtr(0)
+        .estb(eram_stb), .eack(eram_ack), .edtr(eram_dread)
     );
 
     //===============================//
@@ -278,5 +314,29 @@ module main (
         .i_addr(ram_addr[BRAM_ADDR-1:0]), .i_rw(ram_rw),
         .o_dread(ram_dread), .i_dwrite(ram_dwrite),
         .i_stb(ram_stb), .o_ack(ram_ack)
+    );
+
+    //===============================//
+    // External SRAM controller
+    //===============================//
+
+    wire eram_stb, eram_ack;
+    wire[31:0] eram_dread;
+
+    ext_sram #(
+        .SRAM_LATCH_LAZY(1),
+        .SRAM_STALL_CYC(1)
+    ) sram (
+        .clk(clk), .reset(rst || flush),
+        // Memory requests
+        .ack(eram_ack), .stb(eram_stb), .i_rw(rw),
+        .i_addr(ram_addr), .i_dtw(dwrite), .dtr(eram_dread),
+
+        // External IO interface, active >> HIGH <<
+        .din(data_in), .dout(data_out),
+        .we(we), .oe(oe), .oe_negedge(oe_neg),
+        .ale0_negedge(ale0_neg),
+        .ale1_negedge(ale1_neg),
+        .bhe(bhe), .isout(isout)
     );
 endmodule

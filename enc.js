@@ -65,6 +65,18 @@ const uart = [
     '21000000'
 ];
 
+const ram = [
+    '2400FF00', // MOV r0 <- 0xFF00 ; AICT base address
+    '24100FFF', // MOV r1 <- 0x0FFF ; Set GPIO mode out
+    '34100080', // STR [r0+80] <- r1
+    '242000FF', // MOV r2 <- 0x00FF
+    '20302800', // MOV r3 <- r2 shl 16
+    '34230000', // STR [r3] <- r2
+    '14230000', // LDR r2 <- [r3]
+    '34200084', // STR [r0+84] <- r2
+    '50000000'  // B<0000> 0
+];
+
 // Outputs the 4 bram files
 // arr: string array of 32-bit hex
 // sz : total size of ram (# of 32-bit words)
@@ -147,6 +159,9 @@ if(!arg1) {
 } else if(arg1 == 'uart') {
     process.stdout.write('Encoding uart... ');
     encode(uart, default_sz);
+} else if(arg1 == 'ram') {
+    process.stdout.write('Encoding ram... ');
+    encode(ram, default_sz);
 } else if(arg1 == 'file') {
     let file = process.argv[3];
     let bits = process.argv[4];

@@ -41,6 +41,7 @@ module ext_sram (
     output  reg isout
 );
     parameter SRAM_LATCH_LAZY = 1;
+    parameter SRAM_STALL_CYC = 1;
 
     `define B0 7:0
     `define B1 15:8
@@ -62,6 +63,7 @@ module ext_sram (
     reg[3:0] mask;
     reg[31:0] addr;
     reg[2:0] state;
+    reg[2:0] ctr;
 
     // Latched inputs
     wire[31:0] addri, dtw;
@@ -85,7 +87,9 @@ module ext_sram (
         addr    <= 0;
         lastble <= 0;
         hasinit <= 0;
-        isout <= 0;
+        isout   <= 0;
+        ctr     <= 0;
+        ack     <= 0;
     end else case(state)
         // T1
         3'b000: begin
@@ -116,7 +120,8 @@ module ext_sram (
         end
         // TW (wait 1 cycle)
         3'b010: begin
-            state   <= reset ? 0 : 3'b100;
+            state   <= reset ? 0 : SRAM_STALL_CYC == 0 ? 3'b100 : 3'b111;
+            ctr     <= 1;
             // I/O output mode only in write mode
             isout   <= rw;
             // Dirty hack :(
@@ -155,6 +160,10 @@ module ext_sram (
             oe      <= 0;
             ack     <= 0;
         end
+        3'b111: begin
+            ctr     <= ctr + 1;
+            state   <= reset ? 0 : ctr == SRAM_STALL_CYC ? 3'b100 : state;
+        end
         // So Anthony doesn't complain
         default: begin
             state   <= 3'd0;
@@ -162,7 +171,12 @@ module ext_sram (
     endcase
 
     // Negedge signals
-    always @(negedge clk) case(state)
+    always @(negedge clk)
+    if(reset) begin
+        ale0_negedge <= 0;
+        ale1_negedge <= 0;
+        oe_negedge <= 0;
+    end else case(state)
         // Before T1
         3'b000, 3'b101: begin
             oe_negedge   <= 0;

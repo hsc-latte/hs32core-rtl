@@ -1,6 +1,8 @@
 `include "frontend/sram.v"
 module main (
     input CLK, output wire LEDG_N, output reg LEDR_N,
+    input wire RST_N,
+
     // I/O Bus
     inout IO0, inout IO1, inout IO2, inout IO3, inout IO4,
     inout IO5, inout IO6, inout IO7, inout IO8, inout IO9,
@@ -43,7 +45,10 @@ module main (
     reg [31:0] data_final;
     initial data_final = 0;
     wire[31:0] dtr;
-    assign { GPIO8, GPIO7, GPIO6, GPIO5, GPIO4, GPIO3, GPIO2, GPIO1, GPIO0 } = data_final[15:7]; //data_in[15:7];
+    assign { GPIO8, GPIO7, GPIO6, GPIO5, GPIO4, GPIO3, GPIO2, GPIO1, GPIO0 } = 
+    //{ 6'b0, fsm };
+    data_final[15:7];
+    //data_out[8:0];
 
     reg[23:0] ctr;
     wire clk1;
@@ -59,25 +64,24 @@ module main (
     end
 
     // Power on reset
-    reg por, state;
-    initial por = 0;
-    initial state = 0;
-    always @(posedge CLK) begin
-        if(!state) begin
-            por <= 1;
-            state <= 1;
+    parameter RST_BITS = 16;
+    reg[RST_BITS-1:0] rctr = 0;
+    always @(posedge clk1) begin
+        if(!rctr[RST_BITS-1]) begin
+            rctr <= rctr + 1;
         end
-        else por <= 0;
     end
+    wire rst = ~rctr[RST_BITS-1] | ~RST_N;
 
     reg[2:0] fsm;
     initial fsm = 0;
+    initial LEDR_N = 1;
     always @(posedge clk1) case(fsm)
         3'b000: begin
             rw <= 1;
             valid <= 1;
-            dtw <= 32'haaaa_aaaa;
-            addri <= { 32'h0000_0010 };
+            dtw <= 32'h00AA_00FF;
+            addri <= { 32'h00FF_0001 };
             fsm <= 3'b001;
             LEDR_N <= 1;
         end
@@ -97,11 +101,14 @@ module main (
         default: begin end
     endcase
 
-    ext_sram sram (
-        .clk(clk1), .reset(por),
+    ext_sram #(
+        .SRAM_LATCH_LAZY(1),
+        .SRAM_STALL_CYC(1)
+    ) sram (
+        .clk(clk1), .reset(rst),
         // Memory requests
-        .ready(done), .valid(valid), .rw(rw),
-        .addri(addri), .dtw(dtw), .dtr(dtr),
+        .ack(done), .stb(valid), .i_rw(rw),
+        .i_addr(addri), .i_dtw(dtw), .dtr(dtr),
         // External IO interface, active >> HIGH <<
         .din(data_in), .dout(data_out),
         .we(we), .oe(oe), .oe_negedge(oe_neg),

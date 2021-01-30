@@ -39,7 +39,8 @@ module tb_soc;
         .data0("../bench/bram0.hex"),
         .data1("../bench/bram1.hex"),
         .data2("../bench/bram2.hex"),
-        .data3("../bench/bram3.hex")
+        .data3("../bench/bram3.hex"),
+        .RST_BITS(3)
     ) top (
         .CLK(clk), .RST_N(1'b1),
         .LEDR_N(ledr), .LEDG_N(ledg),

@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Sun Nov 29 20:05:54 2020
+[*] Sat Jan 30 06:02:04 2021
 [*]
-[dumpfile] "c:\Users\Kevin\Desktop\Projects\fpga\hsc\rtl\build\sram_tb.vcd"
-[dumpfile_mtime] "Sun Nov 29 20:03:39 2020"
-[dumpfile_size] 1267
-[savefile] "C:\Users\Kevin\Desktop\Projects\fpga\hsc\rtl\bench\rtl\tb_sram.gtkw"
+[dumpfile] "c:\Users\Kevin\Desktop\Projects\fpga\caravel-hs32core\verilog\rtl\hs32cpu\build\tb_sram.vcd"
+[dumpfile_mtime] "Sat Jan 30 06:01:18 2021"
+[dumpfile_size] 2802
+[savefile] "C:\Users\Kevin\Desktop\Projects\fpga\caravel-hs32core\verilog\rtl\hs32cpu\bench\rtl\tb_sram.gtkw"
 [timestart] 0
-[size] 1000 600
-[pos] 425 62
-*-2.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[size] 1536 801
+[pos] -87 -87
+*-3.675658 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_sram.
 [sst_width] 197
 [signals_width] 167
@@ -19,22 +19,20 @@
 tb_sram.sram.clk
 tb_sram.sram.reset
 tb_sram.sram.state[2:0]
-@29
 tb_sram.sram.mask[3:0]
-@28
 tb_sram.sram.addrl
 @22
 tb_sram.sram.addr[31:0]
 @200
 -
-@28
-tb_sram.sram.ready
-tb_sram.sram.valid
 @22
 tb_sram.sram.addri[31:0]
 tb_sram.sram.dtw[31:0]
 tb_sram.sram.dtr[31:0]
+@29
+tb_sram.sram.ack
 @28
+tb_sram.sram.stb
 tb_sram.sram.rw
 @200
 -

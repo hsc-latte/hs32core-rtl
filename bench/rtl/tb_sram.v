@@ -20,13 +20,12 @@
  */
 
 `ifdef SIM
-`define SRAM_LATCH_LAZY
 `include "frontend/sram.v"
 `timescale 1ns / 1ns
 module tb_sram;
     parameter PERIOD = 2;
     
-    reg clk = 0;
+    reg clk = 1;
     reg reset = 1;
 
     reg valid = 1;
@@ -45,20 +44,25 @@ module tb_sram;
     end
 
     initial begin
-        #PERIOD
+        #(PERIOD)
         reset <= 0;
+        #(PERIOD)
+        valid <= 0;
         #(PERIOD*20)
         $finish;
     end
     
-    ext_sram sram(
+    ext_sram #(
+        .SRAM_LATCH_LAZY(0),
+        .SRAM_STALL_CYC(0)
+    ) sram(
         .clk(clk),
         .reset(reset),
-        .valid(valid),
-        .ready(ready),
-        .rw(rw),
-        .addri(addri),
-        .dtw(dtw),
+        .ack(ready), 
+        .stb(valid),
+        .i_rw(rw),
+        .i_addr(addri),
+        .i_dtw(dtw),
         .dtr(dtr),
         .din(16'hABCD)
     );
