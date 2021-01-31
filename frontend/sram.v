@@ -98,7 +98,7 @@ module ext_sram (
                 ? 3'b010 : 3'b001 : 0;
             dout    <= addri[16:1];
             addrl   <= addri[0];
-            mask    <= addri[0] && !rw ? 4'b0001 : 4'b0011;
+            mask    <= addri[0] ? 4'b0001 : 4'b0011;
             addr    <= addri;
             r_addr  <= i_addr;
             r_rw    <= i_rw;
@@ -125,7 +125,7 @@ module ext_sram (
             we      <= rw;
             // Dirty hack :(
             dout    <= rw ?
-                mask == 4'b0001 ? { dtw[`B1], 8'b0 } :
+                mask == 4'b0001 ? { dtw[`B0], 8'b0 } :
                 mask == 4'b0011 ? dtw[15:0] :
                 mask == 4'b0110 ? dtw[23:8] :
                 mask == 4'b1100 ? dtw[31:16] :
@@ -138,7 +138,7 @@ module ext_sram (
         // T3 (wait for oe_negedge)
         3'b100: begin
             state   <= mask[3] || reset ? 3'b000 : 3'b101;
-            mask    <= mask[0] ? addrl && !rw ? 4'b0110 : 4'b1100 : 4'b1000;
+            mask    <= mask[0] ? addrl ? 4'b0110 : 4'b1100 : 4'b1000;
             ack     <= !reset && mask[3];
             we      <= 0;
             addr    <= addr + 2;        
