@@ -49,6 +49,7 @@ module ext_sram (
     `define B3 31:24
 
     /*
+     * Mask corresponds to LHLH, which bit of din to write.
      * Byte aligned read and write:
      * Mask = 0011, 1100
      * BHLE = 11, 11
@@ -75,7 +76,7 @@ module ext_sram (
     assign rw = state == 0 ? i_rw : r_rw;
 
     // Bleh
-    assign ble = !(mask[1] | !rw);
+    assign ble = !((mask[1] | mask[3]) | !rw);
 
     // Generate SRAM_LATCH_LAZY
     // For waveforms and cycle names, see CPU.md
@@ -130,14 +131,14 @@ module ext_sram (
                 mask == 4'b1100 ? dtw[31:16] :
                 { 8'b0, dtw[`B3] } : 16'b0;
             // BHE is active low and INVERTED on the output
-            bhe     <= mask[0] | !rw;
+            bhe     <= (mask[2] | mask[0]) | !rw;
             // Output enable only in read mode
             oe      <= !rw;
         end
         // T3 (wait for oe_negedge)
         3'b100: begin
             state   <= mask[3] || reset ? 3'b000 : 3'b101;
-            mask    <= mask[0] ? addrl  && !rw ? 4'b0110 : 4'b1100 : 4'b1000;
+            mask    <= mask[0] ? addrl && !rw ? 4'b0110 : 4'b1100 : 4'b1000;
             ack     <= !reset && mask[3];
             we      <= 0;
             addr    <= addr + 2;        
