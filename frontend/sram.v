@@ -111,7 +111,6 @@ module ext_sram (
             state   <= reset ? 0 : 3'b010;
             // BLE is active low and NOT inverted on the output
             dout    <= { ble, addr[31:17] };
-            we      <= rw;
             if(SRAM_LATCH_LAZY) begin
                 hasinit <= 1;
             end
@@ -122,6 +121,7 @@ module ext_sram (
             ctr     <= 1;
             // I/O output mode only in write mode
             isout   <= rw;
+            we      <= rw;
             // Dirty hack :(
             dout    <= rw ?
                 mask == 4'b0001 ? { dtw[`B1], 8'b0 } :
