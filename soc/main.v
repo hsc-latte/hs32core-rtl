@@ -66,12 +66,15 @@ module main (
 
     wire clk = CLK;
     reg[RST_BITS-1:0] ctr = 0;
-    always @(posedge clk) begin
+    always @(posedge clk)
+    if(!RST_N) begin
+        ctr <= 0;
+    end else begin
         if(!ctr[RST_BITS-1]) begin
             ctr <= ctr + 1;
         end
     end
-    wire rst = ~ctr[RST_BITS-1] | ~RST_N;
+    wire rst = !ctr[RST_BITS-1] && (ctr != 0);
 
     // Address latch OE pulldown
     initial OE_BY0_N = 0;
@@ -242,8 +245,8 @@ module main (
     assign GPIO6 = io_oeb_buf[6] ? io_out_buf[6] : 1'bz;
     assign GPIO7 = io_oeb_buf[7] ? io_out_buf[7] : 1'bz;
     assign GPIO8 = io_oeb_buf[8] ? io_out_buf[8] : 1'bz;
-    assign LEDR_N = ~(io_out_buf[10] | rst);
-    assign LEDG_N = ~io_out_buf[11];
+    assign LEDR_N = ~(io_out_buf[11] | rst);
+    assign LEDG_N = ~io_out_buf[10];
     assign io_in = {
         io_out_buf[11], io_out_buf[10],
         GPIO9, GPIO8,

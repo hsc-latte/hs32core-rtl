@@ -1,21 +1,21 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Sun Jan 03 06:17:39 2021
+[*] Sun Jan 31 04:04:06 2021
 [*]
 [dumpfile] "c:\Users\Kevin\Desktop\Projects\fpga\caravel-hs32core\verilog\rtl\hs32cpu\build\dump.vcd"
-[dumpfile_mtime] "Sun Jan 03 06:16:57 2021"
-[dumpfile_size] 30306
+[dumpfile_mtime] "Sun Jan 31 04:03:30 2021"
+[dumpfile_size] 738334
 [savefile] "C:\Users\Kevin\Desktop\Projects\fpga\caravel-hs32core\verilog\rtl\hs32cpu\bench\rtl\tb_soc.gtkw"
-[timestart] 0
+[timestart] 44
 [size] 1536 801
-[pos] -139 -139
-*-6.896852 28 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] -1 -1
+*-5.896852 203 197 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_soc.
 [treeopen] tb_soc.top.
 [sst_width] 275
 [signals_width] 282
 [sst_expanded] 1
-[sst_vpaned_height] 473
+[sst_vpaned_height] 251
 @28
 tb_soc.top.cpu.i_clk
 tb_soc.top.cpu.reset
@@ -29,7 +29,6 @@ tb_soc.top.bram_ctl.i_reset
 tb_soc.top.bram_ctl.i_stb
 tb_soc.top.bram_ctl.o_ack
 @22
-tb_soc.top.bram_ctl.i_addr[7:0]
 tb_soc.top.bram_ctl.i_dwrite[31:0]
 tb_soc.top.bram_ctl.o_dread[31:0]
 @28
@@ -108,14 +107,14 @@ tb_soc.top.cpu.FETCH.newpc[31:0]
 tb_soc.top.cpu.FETCH.full
 @1401200
 -Fetch
-@800200
+@c00200
 -Queue
 @22
 tb_soc.top.cpu.FETCH.\fifo[0][31:0]
 tb_soc.top.cpu.FETCH.\fifo[1][31:0]
-@1000200
+@1401200
 -Queue
-@800200
+@c00200
 -Decode
 @28
 tb_soc.top.cpu.DECODE.clk
@@ -154,9 +153,9 @@ tb_soc.top.cpu.DECODE.rd[3:0]
 tb_soc.top.cpu.DECODE.rm[3:0]
 tb_soc.top.cpu.DECODE.rn[3:0]
 tb_soc.top.cpu.DECODE.shift[4:0]
-@1000200
+@1401200
 -Decode
-@800200
+@c00200
 -Execute
 @28
 tb_soc.top.cpu.EXEC.clk
@@ -316,7 +315,41 @@ tb_soc.top.cpu.EXEC.regfile_u.\regs[14][31:0]
 tb_soc.top.cpu.EXEC.regfile_u.\regs[15][31:0]
 @1401200
 -User Regfile
-@1000200
 -Execute
+@c00200
+-Devboard
+@22
+tb_soc.top.data_out[15:0]
+tb_soc.top.data_in[15:0]
+tb_soc.devboard.a0[15:0]
+tb_soc.devboard.a1[15:0]
+tb_soc.devboard.addr[31:0]
+tb_soc.devboard.inp[15:0]
+tb_soc.devboard.out[15:0]
+@28
+tb_soc.devboard.bhe
+tb_soc.devboard.ble
+@1401200
+-Devboard
+@c00200
+-SRAM
+@28
+tb_soc.top.sram.state[2:0]
+tb_soc.top.sram.mask[3:0]
+tb_soc.top.sram.stb
+tb_soc.top.sram.ack
+@200
+-
+@22
+tb_soc.top.sram.din[15:0]
+tb_soc.top.sram.dout[15:0]
+tb_soc.top.sram.i_dtw[31:0]
+tb_soc.top.sram.i_addr[31:0]
+@28
+tb_soc.top.sram.we
+@22
+tb_soc.top.sram.dtr[31:0]
+@1401200
+-SRAM
 [pattern_trace] 1
 [pattern_trace] 0

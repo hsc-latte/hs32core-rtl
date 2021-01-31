@@ -81,7 +81,7 @@ module soc_bram_ctl (
     wire[31:0] dwrite;
     wire we;
     assign addr = i_addr;
-    assign we = i_rw;
+    assign we = i_rw & (r_bsy | i_stb);
     assign dwrite = i_dwrite;
 
     reg r_bsy;
