@@ -40,7 +40,7 @@ module hs32_alu (
             (i_op == `HS32A_ADD) ? i_a + i_b :
             (i_op == `HS32A_SUB) ? { 1'b0, i_a } - { 1'b0, i_b } :
             (i_op == `HS32A_AND) ? { i_fl[1], i_a & i_b } :
-            (i_op == `HS32A_AND) ? { i_fl[1], i_a | i_b } :
+            (i_op == `HS32A_OR) ? { i_fl[1], i_a | i_b } :
             (i_op == `HS32A_XOR) ? { i_fl[1], i_a ^ i_b } :
             (i_op == `HS32A_BIC) ? { i_fl[1], i_a & ~i_b } :
             (i_op == `HS32A_ADC) ? i_a + i_b + { 31'b0, i_fl[1] } :
