@@ -25,3 +25,7 @@ mag/
 def/
 spi/
 verilog/
+
+bin/
+obj/
+._*
