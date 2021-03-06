@@ -52,13 +52,13 @@
         {
             "label": "Upload to FPGA",
             "detail": "Upload to FPGA (must have it plugged in)",
-            "windows": {
-                "command": "iceFUNprog",
-                "args": [
-                    "program",
-                    "build/hardware.bin"
-                ],
-            },
+            "command": "dotnet",
+            "args": [
+                "third_party/icefunprog/bin/Release/netcoreapp3.1/iceFUNprog.dll",
+                "--",
+                "program",
+                "build/hardware.bin"
+            ],
             "problemMatcher": [],
         },
         ////////////////////////////////////////////////////////////////
@@ -85,7 +85,7 @@
             "options": [
                 "REGULAR", "PROG", "SOC"
             ],
-            "default": "REGULAR"
+            "default": "SOC"
         }
     ]
 }
