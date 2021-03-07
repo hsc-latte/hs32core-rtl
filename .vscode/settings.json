@@ -36,8 +36,5 @@
             "forceToTop": true
         }
     ],
-    "verilog.linting.linter": "verilator",
-    "grammarly.userWords": [
-        "rx"
-    ]
+    "verilog.linting.linter": "verilator"
 }

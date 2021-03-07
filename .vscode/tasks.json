@@ -3,6 +3,31 @@
     // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
+        {
+            "label": "Build icefunprog",
+            "type": "shell",
+            "command": "dotnet",
+            "windows": {
+                "args": [
+                    "publish",
+                    "third_party/icefunprog",
+                    "-c", "Release",
+                    "-o", "build/icefunprog",
+                    "-r", "win-x64",
+                    "--self-contained", "false"
+                ]
+            },
+            "osx": {
+                "args": [
+                    "publish",
+                    "third_party/icefunprog",
+                    "-c", "Release",
+                    "-o", "build/icefunprog",
+                    "-r", "osx-x64",
+                    "--self-contained", "false"
+                ]
+            }
+        },
         ////////////////////////////////////////////////////////////////
         {
             "label": "1. yosys",
@@ -54,7 +79,7 @@
             "detail": "Upload to FPGA (must have it plugged in)",
             "command": "dotnet",
             "args": [
-                "third_party/icefunprog/bin/Release/netcoreapp3.1/iceFUNprog.dll",
+                "build/icefunprog/iceFUNprog.dll",
                 "program",
                 "build/hardware.bin"
             ],
@@ -73,8 +98,7 @@
                 "isDefault": true
             },
             "problemMatcher": [],
-        },
-        ////////////////////////////////////////////////////////////////
+        }
     ],
     "inputs": [
         {

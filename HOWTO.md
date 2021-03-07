@@ -8,22 +8,32 @@
 - [Running the flow manually](#running-the-flow-manually)
 ---
 
-## Get iceFUNprog (console version)
-Located in `third_party/` is a **dotnet core** distribution for Windows and Mac users only (for now).
-In the workspace root, execute
+> To those who don't use VSCode, all commands can be found in tasks.json.
+> You can then configure your own comands in your favourite IDE.
+
+## Build iceFUNprog (console version)
+Install the dotnet core runtime.
+Located in `third_party/` is a **dotnet core** distribution for Windows and Mac users only (for now). To build, run the task "Build icefunprog".
+To run the program, simply execute
 ```
-cd third_party/icefunprog && dotnet publish -c Release
+dotnet build/icefunprog/iceFUNprog.dll
 ```
-and optionally add the `.exe` to your PATH (on Windows).
+or
+```
+./build/icefunprog/iceFUNprog
+```
+Optionally add the executable located in `build/icefunprog/` to your PATH.
 
 ## Install VSCode extensions
 
 For VSCode users,
-install the following recommended extensions (all optional):
+install the following recommended extensions (optional):
 - spmeesseman.vscode-taskexplorer
 - theonekevin.icarusext
 
 ## Install the RTL toolchain
+
+> Unless you're working on the RTL code, you do not need to install the toolchain.
 
 Ensure you have all the tools needed under your environment PATH variable, this includes:
 `yosys`, `nextpnr-ice40`, `icepack`, `iverilog`, `vvp`, `gtkwave`, `verilator`. Windows users, ensure you have WSL enabled and the GNU toolchain installed.
