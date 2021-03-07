@@ -9,9 +9,8 @@
 ---
 
 ## Get iceFUNprog (console version)
-Located in `third_party/` is a **dotnet core** distribution for
-Windows and dMac users only (for now).
-In the workspace root, simply execute
+Located in `third_party/` is a **dotnet core** distribution for Windows and Mac users only (for now).
+In the workspace root, execute
 ```
 cd third_party/icefunprog && dotnet publish -c Release
 ```
@@ -52,15 +51,24 @@ You should add yosys, iverilog and gtkwave to your path. The binaries are locate
 
 ### Building the toolchain from source
 
-You will need to build `yosys` first, then `icestorm` and finally `nextpnr-ice40`. Good luck if you're on MacOS:
+You will need to build `yosys` first, then `icestorm` and finally `nextpnr-ice40`. Good luck if you're on Mac:
 - Use Homebrew to install `yosys` and `icarus-verilog`
 - Build `icestorm` and `nextpnr` manually (follow the instructions on the respective Github repositories).
-- `sed` is broken and you need to install `sed` fom Brew and override it by setting `PATH`.
+- Be sure to follow the build instructions on the respective repositories.
+- `sed` is broken and you need to install `sed` from Brew and override it by setting `PATH`.
+  - If it doesn't work, do `sudo su`, manually set PATH and run `make install` from there.
 - To install GtkWave, see https://ughe.github.io/2018/11/06/gtkwave-osx
+
+**Word of caution:** Most of these packages build without any optimization enabled and are therefore painfully slow. Make sure to also:
+- Build `yosys` with `ENABLE_NDEBUG=1`.
+  - On Mac, do `brew edit yosys` and while you're at it, why not add `-j8` to the build args. Then issue `brew -v install yosys --build-from-source`
+- When building `nextpnr`, pass `-DUSE_OPENMP=ON` to `cmake`
+  - On Mac, you have brought pain upon yourself. Install `libomp` from Brew.
+  - Open CMakeLists.txt and find `-fopenmp` and replace it with `-Xpreprocessor -fopenmp -L/usr/local/lib/ -lomp`. Turn on `USE_OPENMP` while you're at it.
 
 ## Running the flow manually
 
-Instructions are for if you are not using vscode.
+Instructions are for if you are not using VSCode.
 
 **!! MAKE SURE YOU RUN ALL COMMANDS FROM THE ROOT DIRECTORY, `rtl` !!**
 

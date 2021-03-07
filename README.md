@@ -27,7 +27,7 @@ Use `enc.js` to select from a premade compiled program.
 ```
 node enc.js blinky
 ```
-Under `bench/` you will find generate files.
+Under `bench/` you will find generated files.
 Next, run the `Build All` task and select `SOC`
 to configure the project for our devboard.
 Finally, plug in the devboard and run the `Upload`

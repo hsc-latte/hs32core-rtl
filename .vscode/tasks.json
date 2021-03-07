@@ -26,9 +26,9 @@
                 "--hx8k",
                 "--package", "cb132",
                 "--freq", "16",
-                "--opt-timing",
-                "--router", "router1",
-                "--placer", "sa",
+                //"--opt-timing",
+                //"--router", "router1",
+                //"--placer", "sa",
                 "--starttemp", "1000",
                 "--json", "build/hardware.json",
                 "--asc", "build/hardware.asc",
@@ -55,7 +55,6 @@
             "command": "dotnet",
             "args": [
                 "third_party/icefunprog/bin/Release/netcoreapp3.1/iceFUNprog.dll",
-                "--",
                 "program",
                 "build/hardware.bin"
             ],
