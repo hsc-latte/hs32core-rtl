@@ -207,7 +207,7 @@ function instr_ldr(tokens) {
 
 function instr_str(tokens) {
     // STR [PTR] <- Rd
-    if(!match_token(tokens, [ 'INSTR','PTR',',','IDENT' ])) {
+    if(match_token(tokens, [ 'INSTR','PTR',',','IDENT' ])) {
         let enc = parse_addressing_mode(tokens[2].value);
         enc.enc.rd = get_reginfo(tokens[3].value, false).reg;
         if(enc.type == 'i') enc.enc.op = 0b001_10_100;
