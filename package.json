@@ -1,0 +1,14 @@
+{
+  "devDependencies": {
+    "@types/argparse": "^2.0.5",
+    "@types/node": "^14.14.34"
+  },
+  "dependencies": {
+    "argparse": "^2.0.1",
+    "system": "^2.0.1"
+  },
+  "scripts": {
+    "build": "tsc -p third_party/asm/",
+    "asm": "node build/asm"
+  }
+}

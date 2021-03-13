@@ -16,6 +16,9 @@ log.txt
 *.hex
 out.v
 
+# don't ignore firmware
+!firmware/*
+
 # testbench, openlane
 bench/formal/*/
 openlane/*/runs/
@@ -26,8 +29,10 @@ def/
 spi/
 verilog/
 
+# build objects
 bin/
 obj/
 ._*
 node_modules/
 package-lock.json
+*.js

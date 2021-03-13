@@ -59,7 +59,7 @@ Thus,
 - Connect A1 to devboard RX and B1 to Arduino PIN X
 - Connect B2 to devboard TX and A2 to Arduino PIN Y
 
-Keep note of what X and Y are (I chose 3 and 4). Make sure you don't choose the dedicated serial pins 0 and 1 on the UNO and similar pins on other boards.
+Keep note of what X and Y are (I chose 3 and 2). Make sure you don't choose the dedicated serial pins 0 and 1 on the UNO and similar pins on other boards.
 
 > Before you continue, ensure the output levels are correct or you will fry the FPGA.
 
