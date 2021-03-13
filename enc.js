@@ -77,7 +77,7 @@ const ram = [
     '34420000', // STR [r2] <- r4
     '14430004', // LDR r4 <- [r3+4]
     '34420004', // STR [r2+4] <- r4
-    '24500400', // MOV r5, 0x0C00
+    '24500400', // MOV r5, 0x0400
     '20F02000', // MOV pc <- r2
     '34500084', // STR [r0+84] <- r5
     '50000000'  // B<0000> 0
@@ -123,37 +123,7 @@ function encode(arr, sz) {
 
 const default_sz = 1024;
 
-const readline = require('readline');
 const { exit } = require('process');
-const ql = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-function prompt(str) {
-    return new Promise((resolve) => {
-        ql.question(str, (d) => {
-            resolve(d);
-        });
-    });
-}
-async function main() {
-    let bits = await prompt(`32-bit words in ram (default ${default_sz}): `);
-    bits = parseInt(bits);
-    bits = bits ? bits : default_sz;
-    let prog = [];
-    console.log('Enter program hex array:');
-    for(i = 0; i < bits; i++) {
-        /** @type{string} */
-        let line = await prompt('> ');
-        if(!line) break;
-        prog.push(line);
-    }
-    // console.log(prog);
-    process.stdout.write('Encoding program... ');
-    encode(prog, bits);
-    console.log('Done.');
-    exit(0);
-}
 const preamble =
 `
  _         ____ ___                
@@ -165,43 +135,8 @@ const preamble =
      Kevin Dai and Anthony Kung
 `;
 console.log(preamble);
-let arg1 = process.argv[2];
-if(!arg1) {
-    main();
-} else if(arg1 == 'blinky') {
-    process.stdout.write('Encoding blinky... ');
-    encode(blinky, default_sz);
-} else if(arg1 == 'uart') {
-    process.stdout.write('Encoding uart... ');
-    encode(uart, default_sz);
-} else if(arg1 == 'ram') {
-    process.stdout.write('Encoding ram... ');
-    encode(ram, default_sz);
-} else if(arg1 == 'file') {
-    let file = process.argv[3];
-    let bits = process.argv[4];
-    console.log(`Reading file ${file}... `);
-    if(fs.existsSync(file)) {
-        process.stdout.write('Encoding file... ');
-        let prog = fs.readFileSync(file, { encoding: 'ascii' });
-        prog = prog.split('\n').map(v => v.trim());
-        //console.log(prog);
-        bits = parseInt(bits);
-        if(!bits) {
-            console.warn(`Invalid word length. Defaulting to ${default_sz}.`);
-            bits = default_sz;
-        }
-        encode(prog, bits);
-    } else {
-        console.error('File not found!');
-        exit(-1);
-    }
-    encode(blinky, default_sz);
-} else {
-    console.error(`Unknown argument: ${arg1}.`);
-    console.log('Usage: node ./enc.js [ blinky | file ] [filename?] [words?]');
-    exit(-1);
-}
+
+
 
 console.log('Done.');
 exit(0);

@@ -20,7 +20,27 @@
 
 // Contains all the arch-specific parsing and encoding
 
+const opcode_table = {
+    ldr:    parse_ldr,
+    str:    parse_str,
+    mov:    (tokens) => parse_binary(tokens, null, null, 0b001_00_000),
+    add:    (tokens) => parse_aluop(tokens, 'OP', '+', 0b010_00_000),
+    addc:   (tokens) => parse_aluop(tokens, 'OP', '+', 0b010_00_001),
+    sub:    (tokens) => parse_aluop(tokens, 'OP', '-', 0b011_00_000),
+    subc:   (tokens) => parse_aluop(tokens, 'OP', '-', 0b011_00_010),
+    and:    (tokens) => parse_aluop(tokens, 'OPL', '&', 0b100_00_000),
+    or:     (tokens) => parse_aluop(tokens, 'OPL', '|', 0b101_00_000),
+    xor:    (tokens) => parse_aluop(tokens, 'OPL', '^', 0b110_00_000),
+    cmp:    (tokens) => parse_binary(tokens, null, null, 0b011_01_000),
+    tst:    (tokens) => parse_binary(tokens, null, null, 0b100_01_000),
+
+    // TODO: RSUB, MUL, RSUBC, BIC, INT
+};
+
 function parseinstr(instr, tokens) {
+    let b = instr.match(/^b(?<id>eq|ne|cs|nc|ss|ns|ov|nv|ab|be|ge|lt|gt|le)?(?<link>l)?$/);
+    if(b && b.groups)
+        return parse_branch(tokens, b.groups);
     if(!opcode_table[instr])
         throw `Unknown instruction "${instr}"`;
     return opcode_table[instr](tokens);
@@ -33,25 +53,30 @@ function resolve(blocks, symtab) {
     blocks.forEach(b => {
         symtab[b.label] = pc;
         b.instrs.forEach(v => {
-            if(v.type == 'i' || v.type == 'j')
+            if(v.type == 'i' || v.type == 'r')
                 pc += 4;
-            // TODO: ...
+            else if(v.type == 'b')
+                pc += v.enc.length;
         });
     });
+
+    pc = 0;
 
     // Resolve symbol (2 loops allow for backref)
     let res = [];
     blocks.forEach(b => {
-        symtab[b.label] = pc;
         b.instrs.forEach((v, i, arr) => {
             if(v?.type == 'i' && v.enc.imm16.offset != undefined) {
                 let label = v.enc.imm16.offset;
+                let f = v.enc.imm16.f;
                 if(symtab[label] == undefined)
                     throw `Label not found "${label}"`;
-                arr[i].enc.imm16 = pc - symtab[label];
+                arr[i].enc.imm16 = f(symtab[label]) - pc;
             }
-            if(v?.type == 'i' || v?.type == 'j')
+            if(v?.type == 'i' || v?.type == 'r')
                 pc += 4;
+            else if(v.type == 'b')
+                pc += v.enc.length;
             res.push(arr[i]);
         });
     });
@@ -59,8 +84,45 @@ function resolve(blocks, symtab) {
     return res;
 }
 
+function tohexarray(blocks) {
+    let res = [];
+    blocks.forEach(b => {
+        if(b.type == 'i') {
+            res.push(((
+                ((b.enc.op & 0xFF) << 24) |
+                ((b.enc.rd & 0x0F) << 20) |
+                ((b.enc.rm & 0x0F) << 16) |
+                ((b.enc.imm16 >>> 0) & 0xFFFF)
+            ) >>> 0).toString(16).padStart(8,'0'));
+        } else if(b.type == 'r') {
+            res.push(((
+                ((b.enc.op & 0xFF) << 24) |
+                ((b.enc.rd & 0x0F) << 20) |
+                ((b.enc.rm & 0x0F) << 16) |
+                ((b.enc.rn & 0x0F) << 12) |
+                ((b.enc.sh5 & 0x1F) << 7) |
+                ((b.enc.dir & 0x03) << 5)
+            ) >>> 0).toString(16).padStart(8,'0'));
+        } else if(b.type == 'b') {
+            for(var i = 0; i < b.enc.length; i += 4) {
+                res.push(((
+                    (b.enc[i] << 24) | (b.enc[i+1] << 16) |
+                    (b.enc[i+2] << 8) | (b.enc[i+3])
+                ) >>> 0).toString(16).padStart(8,'0'));
+            }
+        }
+    });
+    return res;
+}
+
+function encodebytes(bytes) {
+    return { type: 'b', enc: bytes };
+}
+
 exports.parseinstr = parseinstr;
 exports.resolve = resolve;
+exports.tohexarray = tohexarray;
+exports.encodebytes = encodebytes;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -75,7 +137,7 @@ function enc_itype(op, rd, rm, imm16) {
 // Encodes r-type instruction
 function enc_rtype(op, rd, rm, rn, sh5, dir, bank) {
     return {
-        type: 'j',
+        type: 'r',
         enc: { op: op, rd: rd, rm: rm, rn: rn, sh5: sh5, dir: dir, bank: bank }
     }
 }
@@ -101,12 +163,19 @@ function get_shift(/** @type{string} */ name) {
  * @returns Register id (i.e., 0 for r0)
  */
 function get_reginfo(name, banked, silent) {
-    let matches = name.toLocaleLowerCase().match(/^[rR](?<id>\d{1,2})$/);
+    let id = name.toLocaleLowerCase();
+    switch(id) {
+        case 'sp': return { reg: 13, bank: 0 };
+        case 'lr': return { reg: 14, bank: 0 };
+        case 'pc': return { reg: 15, bank: 0 };
+    }
+    let matches = id.match(/^[rR](?<id>\d{1,2})$/);
     if(!matches || !matches.groups) {
         if(banked)
             throw "Unimplemented: Register banking";
         else if(!silent)
             throw `Error, unknown register "${name}"`;
+        return undefined;
     }
     return { reg: parseInt(matches.groups.id), bank: 0 };
 }
@@ -121,11 +190,11 @@ function match_token(tokens, arr) {
     return tokens.length == arr.length &&
         arr.reduce((a, v, i) => {
             if(typeof v != 'string') {
-                return a & v.reduce((a1, c) => {
+                return a && v.reduce((a1, c) =>
                     a1 || tokens[i].type == c
-                }, false);
+                , false);
             } else {
-                return a & tokens[i].type == v
+                return a && tokens[i].type == v
             }
         }, true);
 }
@@ -135,14 +204,16 @@ function match_token(tokens, arr) {
  * @param {*} token Token to extract info from
  * @returns Object { rn:, sh5:, dir: }
  */
-function get_shreginfo(token) {
+function get_shreginfo(token, silent) {
     const is_shreg = token.type == 'SHREG';
     return {
-        rn:  get_reginfo(is_shreg ? tokens.value[0] : tokens.value, false).reg,
-        sh5: is_shreg ? tokens.value[2] : 0,
-        dir: is_shreg ? get_shift(tokens.value[1]) : 0
+        rn:  get_reginfo(is_shreg ? token.value[0] : token.value, false, silent)?.reg,
+        sh5: is_shreg ? token.value[2] : 0,
+        dir: is_shreg ? get_shift(token.value[1]) : 0
     }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 /**
  * Return preliminary encodings, let the caller fill in the NaN later.
@@ -152,12 +223,13 @@ function get_shreginfo(token) {
 function parse_addressing_mode(ptr) {
     const tokens = ptr.value;
     if(ptr.type == 'OFFSET') {
-        // [ reg + num ]
+        // [ reg + num ] or [ pc + ident + offset ]
         if(match_token(tokens, [ 'IDENT','OP','NUM' ])) {
-            const rm = get_reginfo(tokens[0].value, false).reg;
+            const rm = get_reginfo(tokens[0].value, false, true)?.reg;
             var num = tokens[2].value;
             if(tokens[1].value == '-') num = -num;
-            return enc_itype(NaN, NaN, rm, num);
+            if(rm == undefined) return enc_itype(NaN, NaN, 15, { offset: rm, f: x => x + num });
+            else                return enc_itype(NaN, NaN, rm, num);
         }
 
         // [ reg + reg sh? ]
@@ -175,64 +247,159 @@ function parse_addressing_mode(ptr) {
     
     // [ ident ] becomes [ pc + offset(ident) ] if ident is not reg
     else if(ptr.type == 'IDENT') {
-        const rm = get_reginfo(ptr.value, false, true).reg;
-        if(rm)  return enc_itype(NaN, NaN, rm, 0);
-        else    return enc_itype(NaN, NaN, 15, { offset: ptr.value });
+        const rm = get_reginfo(ptr.value, false, true)?.reg;
+        if(rm == undefined) return enc_itype(NaN, NaN, 15, { offset: ptr.value, f: x => x });
+        else                return enc_itype(NaN, NaN, rm, 0);
     }
-    
+    console.dir(ptr, { depth: null });
     throw 'Unrecognized addressing mode';
 }
 
-///////////////////////////////////////////////////////////////////////////////
+/**
+ * Encodes an ALU instruction
+ * @param {*} tokens    Input token sequence
+ * @param {*} opt       Operation token type
+ * @param {*} sym       Operation token symbol value
+ * @param {*} rtype     rtype opcode, itype is just rtype | 0b100
+ * @returns Fully encoded instruction
+ */
+function parse_aluop(tokens, opt, sym, rtype) {
+    // XXX Rd <- Rm ? sh(Rn)
+    if(match_token(tokens, ['INSTR','IDENT',',','IDENT',[opt,','],['IDENT','SHREG']])) {
+        if(tokens[4].value != sym) {
+            throw `Unexpected token ${tokens[4].value}`;
+        }
+        const rd = get_reginfo(tokens[1].value).reg;
+        const rm = get_reginfo(tokens[3].value).reg;
+        const { rn, sh5, dir } = get_shreginfo(tokens[5]);
+        return enc_rtype(rtype, rd, rm, rn, sh5, dir, 0);
+    }
+    // XXX Rd <- Rm ? imm
+    if(match_token(tokens, ['INSTR','IDENT',',','IDENT',[opt,','],'NUM'])) {
+        if(tokens[4].value != sym) {
+            throw `Unexpected token ${tokens[4].value}`;
+        }
+        const rd = get_reginfo(tokens[1].value).reg;
+        const rm = get_reginfo(tokens[3].value).reg;
+        const imm16 = tokens[5].value;
+        return enc_itype(rtype + 0b100, rd, rm, imm16);
+    }
+    console.dir(tokens, { depth: null });
+    throw 'Unknown token sequence';
+}
 
-const opcode_table = {
-    ldr: instr_ldr,
-    str: instr_str,
-    mov: instr_mov,
-    // TODO: ...
-};
+function parse_binary(tokens, delim, sym, rtype) {
+    const mydelim = delim ? [delim, ','] : ',';
+    // XXX Rd <- sh(Rn) or Rn or label
+    if(match_token(tokens, ['INSTR','IDENT',mydelim,['IDENT','SHREG']])) {
+        if(delim && tokens[2].value != sym) {
+            throw `Unexpected token ${tokens[2].value}`;
+        }
+        const rd = get_reginfo(tokens[1].value).reg;
+        const { rn, sh5, dir } = get_shreginfo(tokens[3], true);
+        if(rn == undefined) return enc_itype(rtype, rd, 0, { offset: tokens[3].value, f:x => x });
+        else                return enc_rtype(rtype, rd, 0, rn, sh5, dir, 0);
+    }
+    // XXX Rd <- label + offset
+    if(match_token(tokens, ['INSTR','IDENT',mydelim,'IDENT','OP','NUM'])) {
+        if(delim && tokens[2].value != sym) {
+            throw `Unexpected token ${tokens[2].value}`;
+        }
+        const rd = get_reginfo(tokens[1].value, false, true)?.reg;
+        const num = (tokens[4].value == '+' ? 1 : -1) * tokens[5].value;
+        return enc_itype(rtype, rd, 0, { offset: tokens[3].value, f:x => x + num });
+    }
+    // XXX Rd <- imm
+    if(match_token(tokens, ['INSTR','IDENT',mydelim,'NUM'])) {
+        if(delim && tokens[2].value != sym) {
+            throw `Unexpected token ${tokens[2].value}`;
+        }
+        const rd = get_reginfo(tokens[1].value).reg;
+        const imm16 = tokens[3].value;
+        return enc_itype(rtype + 0b100, rd, 0, imm16);
+    }
+    // XXX Rd <- +/-imm
+    if(match_token(tokens, ['INSTR','IDENT',mydelim,'OP','NUM'])) {
+        if(delim && tokens[2].value != sym) {
+            throw `Unexpected token ${tokens[2].value}`;
+        }
+        const rd = get_reginfo(tokens[1].value).reg;
+        const imm16 = (tokens[3].value == '+' ? 1 : -1) * tokens[4].value;
+        return enc_itype(rtype + 0b100, rd, 0, imm16);
+    }
+    console.dir(tokens, { depth: null });
+    throw 'Unknown token sequence';
+}
 
-function instr_ldr(tokens) {
+function parse_ldr(tokens) {
     // LDR Rd <- [PTR]
     if(match_token(tokens, [ 'INSTR','IDENT',',','PTR' ])) {
         let enc = parse_addressing_mode(tokens[3].value);
         enc.enc.rd = get_reginfo(tokens[1].value, false).reg;
         if(enc.type == 'i') enc.enc.op = 0b000_10_100;
-        if(enc.type == 'j') enc.enc.op = 0b000_10_001;
+        if(enc.type == 'r') enc.enc.op = 0b000_10_001;
         return enc;
     }
     console.dir(tokens, { depth: null });
     throw 'Unknown token sequence';
 }
 
-function instr_str(tokens) {
+function parse_str(tokens) {
     // STR [PTR] <- Rd
     if(match_token(tokens, [ 'INSTR','PTR',',','IDENT' ])) {
-        let enc = parse_addressing_mode(tokens[2].value);
+        let enc = parse_addressing_mode(tokens[1].value);
         enc.enc.rd = get_reginfo(tokens[3].value, false).reg;
         if(enc.type == 'i') enc.enc.op = 0b001_10_100;
-        if(enc.type == 'j') enc.enc.op = 0b001_10_001;
+        if(enc.type == 'r') enc.enc.op = 0b001_10_001;
         return enc;
     }
     console.dir(tokens, { depth: null });
     throw 'Unknown token sequence';
 }
 
-function instr_mov(tokens) {
-    // MOV Rd <- sh(Rn) or Rn
-    if(match_token(tokens, ['INSTR','IDENT',',',['IDENT','SHREG']])) {
-        const rd = get_reginfo(tokens[1].value);
-        const { rn, sh5, dir } = get_shreginfo(tokens[3]);
-        return enc_rtype(0b001_00_000, rd, 0, rn, sh5, dir, 0);
+const branch_conds = {
+    eq: 1,
+    ne: 2,
+    cs: 3,
+    nc: 4,
+    ss: 5,
+    ns: 6,
+    ov: 7,
+    nv: 8,
+    ab: 9,
+    be: 10,
+    ge: 11,
+    lt: 12,
+    gt: 13,
+    le: 14,
+}
+
+function parse_branch(tokens, type) {
+    let op = type.link ? 0b011_10_000 : 0b010_10_000;
+    let cond = 0;
+    if(type.id) {
+        cond = branch_conds[type.id];
+        if(cond == undefined)
+            throw `Unknown branch conditional "${type.id}"`;
     }
-    // MOV Rd <- imm
-    if(match_token(tokens, ['INSTR','IDENT',',','NUM'])) {
-        const rd = get_reginfo(tokens[1]);
-        const imm16 = tokens[3].value;
-        return enc_itype(0b001_00_100, rd, 0, imm16);
+
+    if(match_token(tokens, [ 'INSTR','NUM' ])) {
+        return enc_itype(op + cond, 0, 0, tokens[1].value);
     }
+
+    if(match_token(tokens, [ 'INSTR','OP','NUM' ])) {
+        return enc_itype(op + cond, 0, 0, (tokens[1].value == '+' ? 1 : -1) * tokens[2].value);
+    }
+
+    if(match_token(tokens, [ 'INSTR','IDENT' ])) {
+        return enc_itype(op + cond, 0, 0, { offset: tokens[1].value, f: x => x });
+    }
+
+    if(match_token(tokens, [ 'INSTR','IDENT','OP','NUM' ])) {
+        const num = (tokens[2].value == '+' ? 1 : -1) * tokens[3].value;
+        return enc_itype(op + cond, 0, 0, { offset: tokens[1].value, f: x => x + num });
+    }
+
     console.dir(tokens, { depth: null });
     throw 'Unknown token sequence';
 }
-
-// TODO: ...
