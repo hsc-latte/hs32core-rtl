@@ -265,39 +265,7 @@ const preamble =
   (c) 2020-2021 HS32 Core Authors
      Kevin Dai and Anthony Kung
 `;
-const uart = [
-    '2400FF00', // MOV r0 <- 0xFF00 ; AICT base
-    '24100068', // MOV r1 <- 0x68   ; 12Mhz/115200Hz
-    '341000BC', // STR [r0+BC] <- r1
-    '24100FFF', // MOV r1 <- 0x0FFF ; Set GPIO mode out
-    '34100080', // STR [r0+80] <- r1
-    '24100059', // MOV r1 <- [data-3]
-    // Loop
-    '14210000', // LDR r2 <- [r1]
-    '842200FF', // AND r2 <- r2 & 0xFF
-    '6C220000', // CMP r2, 0
-    '51000010', // B<0001> [end]
-    '70000018', // B<0000>L [write]
-    '44110001', // ADD r1 <- r1 + 1
-    '50FFFFE8', // B<0000> [loop]
-    // End
-    '24200800', // MOV r2 <- 0x0800 ; Set green LED
-    '34200084', // STR [r0+84] <- r2
-    '50000000', // B<0000> 0
-    // Write subroutine
-    '24300001', // MOV r3 <- 1  ; Do TX write (badness 1000)
-    '342000B0', // STR [r0+B0] <- r2
-    '343000B8', // STR [r0+B8] <- r3
-    '144000B8', // LDR r4 <- [r0+B8]
-    '8C040020', // TST r4, 0x20 ; Test TX ready
-    '52FFFFF8', // B<0010> -8   ; Loop if not zero
-    '20F0E000', // MOV pc <- lr ; Return
-    // Data
-    '48656c6c',
-    '6f2c2077',
-    '6f726c64',
-    '21000000'
-];
+
 function main() {
     const parser = new ArgumentParser({
         description: "The HS32 Assembler.",

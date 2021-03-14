@@ -1,6 +1,7 @@
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
-- [Get iceFUNprog (console version)](#get-icefunprog--console-version-)
+- [Build iceFUNprog (console version)](#build-icefunprog--console-version-)
+- [HS32 Assembler](#hs32-assembler)
 - [Install VSCode extensions](#install-vscode-extensions)
 - [Install the RTL toolchain](#install-the-rtl-toolchain)
   * [Installing from APIO (all platforms)](#installing-from-apio--all-platforms-)
@@ -12,9 +13,12 @@
 > You can then configure your own comands in your favourite IDE.
 
 ## Build iceFUNprog (console version)
-Install the dotnet core runtime.
-Located in `third_party/` is a **dotnet core** distribution for Windows and Mac users only (for now). To build, run the task "Build icefunprog".
-To run the program, simply execute
+
+Located in `third_party/icefunprog` is a **dotnet core** distribution for Windows and Mac users only (for now). Building is quite simple:
+- Install the dotnet core runtime.
+- To build, run the task "Build icefunprog".
+
+To run the program, execute
 ```
 dotnet build/icefunprog/iceFUNprog.dll
 ```
@@ -23,6 +27,20 @@ or
 ./build/icefunprog/iceFUNprog
 ```
 Optionally add the executable located in `build/icefunprog/` to your PATH.
+
+## HS32 Assembler
+
+Located in `third_party/asm` is an assembler for our custom assembly language.
+- Install node, npm, tsc (for Typescript)
+- In the workspace root, execute `npm run build`
+To run the assembler, execute
+```
+node build/asm --help
+```
+Optionally, install the VSCode language integration for the assembly language.
+- theonekevin.hs32asm
+
+> Unless you're working on RTL, you can safely ignore everything below
 
 ## Install VSCode extensions
 

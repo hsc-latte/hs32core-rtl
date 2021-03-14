@@ -108,7 +108,7 @@ r      Reverse Bus
 * Applicable to SUB variants only, used for indicating
   operand reversal
 
-sss    Input bus values
+sss     Input bus values
                     T1  T2   DTW (Clock cycle/Input bus)
             000     Ignored
             001         imm
