@@ -1,6 +1,6 @@
 ; _start:
     MOV r0 <- FF00h             ; AICT base
-    MOV r1 <- 68h               ; 12Mhz/115200Hz
+    MOV r1 <- 4E2h              ; Clock divider: 12Mhz / 9600Hz
     STR [r0+BCh] <- r1
     MOV r1 <- 0FFFh             ; Set GPIO mode out
     STR [r0+80h] <- r1

@@ -1,0 +1,6 @@
+MOV r10, FFFFh
+ADD r10, r10, 1
+MOV r11, 0Ch
+MOV r0, DEADh
+STR [r10 + r11], r0
+B 0
