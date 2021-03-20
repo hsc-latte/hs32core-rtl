@@ -1,0 +1,3 @@
+#!/bin/bash
+
+docker run --rm -it -v `pwd`:/shared -w /shared hs32-toolchain "$@"
