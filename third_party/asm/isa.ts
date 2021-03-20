@@ -159,6 +159,7 @@ function get_shift(name: string) {
 function get_reginfo(name: string, banked?: boolean, silent?: boolean) {
     let id = name.toLocaleLowerCase();
     switch(id) {
+        case 'mcr':return { reg: 12, bank: 0 };
         case 'sp': return { reg: 13, bank: 0 };
         case 'lr': return { reg: 14, bank: 0 };
         case 'pc': return { reg: 15, bank: 0 };
@@ -204,7 +205,7 @@ function get_signednum(sign: Token, num: Token): number {
 
 // Expect token, value and undefined
 function expect_token(tok: Token, sym: string) {
-    if(tok.value != sym) {
+    if(tok.type != ',' && tok.value != sym) {
         throw `Unexpected token ${tok.value}`;
     }
 }
@@ -227,7 +228,7 @@ function parse_addressing_mode(ptr: Token) {
         }
 
         // [ reg + reg sh? ]
-        else if(match_token(tokens, [ 'IDENT','OP',['IDENT','SHREG'] ])) {
+        if(match_token(tokens, [ 'IDENT','OP',['IDENT','SHREG'] ])) {
             const rm = get_reginfo(tokens[0].value, false).reg;
             const { rn, sh5, dir } = get_shreginfo(tokens[2]);
             if(tokens[1].value == '-') {
@@ -238,18 +239,19 @@ function parse_addressing_mode(ptr: Token) {
     }
 
     // [ num ] becomes [ pc + num ]
-    else if(ptr.type == 'NUM') {
+    if(ptr.type == 'NUM') {
         return enc_itype(NaN, NaN, 15, ptr.value);
     }
 
     // [ ident ] becomes [ pc + offset(ident) ] if ident is not reg
-    else if(ptr.type == 'IDENT') {
+    if(ptr.type == 'IDENT') {
         const rm = get_reginfo(ptr.value, false, true)?.reg;
         if(rm == undefined)
             return enc_itype(NaN, NaN, 15, { offset: ptr.value, T: x => x });
         else
             return enc_itype(NaN, NaN, rm, 0);
     }
+
     throw 'Unrecognized addressing mode';
 }
 
@@ -280,6 +282,8 @@ function parse_aluop(tokens: Token[], opt: string, sym: string, rtype: number) {
         const imm16 = tokens[5].value;
         return enc_itype(rtype + 0b100, rd, rm, imm16);
     }
+
+    console.dir(tokens, { depth: null });
     throw 'Unknown token sequence';
 }
 
@@ -319,6 +323,8 @@ function parse_binary(tokens: Token[], opt: string, sym: string, rtype: number, 
         const imm16 = get_signednum(tokens[3], tokens[4]);
         return enc_itype(rtype + 0b100, rd, rd, imm16);
     }
+
+    console.dir(tokens, { depth: null });
     throw 'Unknown token sequence';
 }
 
@@ -331,6 +337,8 @@ function parse_ldr(tokens: Token[]): Instruction {
         if(enc.type == 'r') enc.enc.op = 0b000_10_001;
         return enc;
     }
+
+    console.dir(tokens, { depth: null });
     throw 'Unknown token sequence';
 }
 
@@ -343,6 +351,8 @@ function parse_str(tokens: Token[]): Instruction {
         if(enc.type == 'r') enc.enc.op = 0b001_10_001;
         return enc;
     }
+
+    console.dir(tokens, { depth: null });
     throw 'Unknown token sequence';
 }
 
@@ -386,5 +396,6 @@ function parse_branch(tokens: Token[], type: {id?: string, link?: string}): Inst
         return enc_itype(op + cond, 0, 0, { offset: tokens[1].value, T: x => x + num });
     }
 
+    console.dir(tokens, { depth: null });
     throw 'Unknown token sequence';
 }

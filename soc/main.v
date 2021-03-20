@@ -325,6 +325,7 @@ module main (
 
     wire eram_stb, eram_ack;
     wire[31:0] eram_dread;
+    wire[31:0] sram_addr = { ~ram_addr[31], ram_addr[31], ram_addr[29:0] };
 
     ext_sram #(
         .SRAM_LATCH_LAZY(1),
@@ -333,7 +334,7 @@ module main (
         .clk(clk), .reset(rst || flush),
         // Memory requests
         .ack(eram_ack), .stb(eram_stb), .i_rw(rw),
-        .i_addr(ram_addr), .i_dtw(dwrite), .dtr(eram_dread),
+        .i_addr(sram_addr), .i_dtw(dwrite), .dtr(eram_dread),
 
         // External IO interface, active >> HIGH <<
         .din(data_in), .dout(data_out),

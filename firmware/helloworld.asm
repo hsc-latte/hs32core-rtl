@@ -16,7 +16,7 @@ loop:
     B loop
 
 write:
-    MOV r3 <- 1                 ; Do TX write (badness 1000)
+    MOV r3 <- 1                 ; Do TX write
     STR [r0+B0h] <- r2
     STR [r0+B8h] <- r3
 

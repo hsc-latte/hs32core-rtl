@@ -24,12 +24,12 @@ import * as isa from './isa';
 const tokenrules : TokenRule[] = [
     { type: "SPACE",    regex: /\s+/ },
     { type: "SHIFT",    regex: /(shr|shl|ror|shx)/ },
-    { type: "(",        regex: /\(/ },
-    { type: ")",        regex: /\)/ },
-    { type: "[",        regex: /\[/ },
-    { type: "]",        regex: /\]/ },
-    { type: ",",        regex: /(?:,|<-)/ },
-    { type: ":",        regex: /:/ },
+    { type: "(",        regex: /(\()/ },
+    { type: ")",        regex: /(\))/ },
+    { type: "[",        regex: /(\[)/ },
+    { type: "]",        regex: /(\])/ },
+    { type: ",",        regex: /(,|<-)/ },
+    { type: ":",        regex: /(:)/ },
     
     // Operators
     { type: "OPL",      regex: /(&|\||\*|\^)/ },
