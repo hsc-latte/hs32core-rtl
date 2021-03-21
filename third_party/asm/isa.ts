@@ -263,7 +263,7 @@ function parse_aluop(tokens: Token[], opt: string, sym: string, rtype: number) {
         const rm = get_reginfo(tokens[3].value).reg;
         const { rn, sh5, dir } = get_shreginfo(tokens[5], true);
         if(rn == undefined)
-            return enc_itype(rtype, rd, rm, { offset: tokens[5].value, T: x => x });
+            return enc_itype(rtype + 0b100, rd, rm, { offset: tokens[5].value, T: x => x });
         else
             return enc_rtype(rtype, rd, rm, rn, sh5, dir, 0);
     }
