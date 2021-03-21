@@ -254,6 +254,22 @@ function encode_bram(arr: string[], sz: number, folder: string) {
     fs.writeFileSync(path.join(folder, 'bram3.hex'), bram3);
 }
 
+function encode_binary(arr: string[], file: string) {
+    let buf = new Uint8Array(arr.length * 4);
+    
+    for(let i = 0; i < arr.length; i++) {
+        buf[i*4 + 3] = (parseInt(arr[i], 16) >> 0) & 0xFF;
+        buf[i*4 + 2] = (parseInt(arr[i], 16) >> 8) & 0xFF;
+        buf[i*4 + 1] = (parseInt(arr[i], 16) >> 16) & 0xFF;
+        buf[i*4 + 0] = (parseInt(arr[i], 16) >> 24) & 0xFF;
+    }
+
+    fs.writeFileSync(file, buf, {
+        encoding: 'binary',
+        flag: 'w+'
+    });
+}
+
 const preamble =
 `
    __       ____ ___               
@@ -305,11 +321,22 @@ function main() {
             }
             case 'hex': {
                 if(fs.existsSync(args.output)) {
-                    encode_bram(isa.tohexarray(prog), size, args.output);
+                    if(fs.statSync(args.output).isDirectory()) {
+                        encode_bram(isa.tohexarray(prog), size, args.output);
+                    } else {
+                        console.error('Output path is not a directory.');
+                        exit(-1);
+                    }
                 } else {
                     console.error('Output directory does not exist.');
                     exit(-1);
                 }
+                break;
+            }
+            case 'bin': {
+                if(fs.existsSync(args.output))
+                    console.error('Output file exists, overwriting...');
+                encode_binary(isa.tohexarray(prog), args.output);
                 break;
             }
         }
