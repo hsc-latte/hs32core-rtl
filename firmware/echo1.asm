@@ -14,8 +14,8 @@ waitrx:
 
     MOV r1, 0400h               ; Turn on green LED
     STR [r0+84h], r1
-    LDR r1, [r0+B4h]            ; Read tx buffer
-    STR [r0+B0h], r1            ; Write rx buffer
+    LDR r1, [r0+B4h]            ; Read rx buffer
+    STR [r0+B0h], r1            ; Write tx buffer
     MOV r1, 3                   ; Set tx and rx ack bits
     STR [r0+B8h], r1
 

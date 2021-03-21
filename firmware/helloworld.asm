@@ -4,7 +4,9 @@
     STR [r0+BCh] <- r1
     MOV r1 <- 0FFFh             ; Set GPIO mode out
     STR [r0+80h] <- r1
-    MOV r1 <- data+17           ; We need to offset at pc-3 = 17
+
+    ADD r1 <- pc + data         ; Calculate absolute address of data
+    ADD r1 <- r1 + 1            ; Offset by (-3 + 4)
 
 loop:
     LDR r2 <- [r1]
@@ -16,8 +18,8 @@ loop:
     B loop
 
 write:
-    MOV r3 <- 1                 ; Do TX write
     STR [r0+B0h] <- r2
+    MOV r3 <- 1                 ; Do TX write
     STR [r0+B8h] <- r3
 
 waittx:
