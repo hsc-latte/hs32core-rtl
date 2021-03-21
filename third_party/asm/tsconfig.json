@@ -5,7 +5,7 @@
         "module": "CommonJS",
         "removeComments": true,
         "noImplicitAny": true,
-        "sourceMap": false,
+        "sourceMap": true,
         "lib": [ "ES2018" ]
     },
     "include": [
