@@ -66,9 +66,9 @@ read_prog_loop:
     ADD r9 <- r9 + r5 shl 8
     BL readbyte                 ; return value is in r5
     ADD r9 <- r9 + r5
-    ; Now r8 = prog word
+    ; Now r9 = prog word
 
-    STR [r10+r11], r8           ; Store it in program memory
+    STR [r10+r11], r9           ; Store it in program memory
     ADD r11, r11, 4             ; Increment program address by 4, word size.
     
     CMP r8, r11                 ; Compare program pointer with size to read
