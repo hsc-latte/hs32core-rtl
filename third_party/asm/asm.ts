@@ -24,6 +24,7 @@ import * as fs from "fs";
 import { exit } from "process";
 import { Block, Instruction, SyntaxRule, Token, TokenRule } from "./common";
 import * as isa from "./isa";
+import SerialPort = require("serialport");
 
 const tokenrules: TokenRule[] = [
   { type: "SPACE", regex: /\s+/ },
@@ -214,7 +215,7 @@ function parseline(tokens: Token[]): Instruction | null {
 }
 
 // Mainly deals with blocks of code to allow jumping + refs
-function parse(lines: string[]) {
+export function parse(lines: string[]) {
   const blocks: Block[] = [];
   const symtab: { [id: string]: number } = {
     // For efficient lookup
@@ -251,7 +252,7 @@ function parse(lines: string[]) {
   return isa.resolve(blocks, symtab);
 }
 
-function normalize(lines: string): string[] {
+export function normalize(lines: string): string[] {
   return lines.match(/[^\r\n]+/g).map((x) => x.trim());
 }
 
@@ -377,5 +378,6 @@ function main() {
 
   exit(0);
 }
-
-main();
+if (require.main === module) {
+  main();
+}
