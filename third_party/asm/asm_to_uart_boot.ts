@@ -36,15 +36,15 @@ function sleep(ms: number) {
 }
 
 async function encode_for_uart_boot(arr: string[], device: string) {
-  let buf = new Uint8Array(arr.length * 4);
+  let programBuffer = new Uint8Array(arr.length * 4);
 
   for (let i = 0; i < arr.length; i++) {
-    buf[i * 4 + 3] = (parseInt(arr[i], 16) >> 0) & 0xff;
-    buf[i * 4 + 2] = (parseInt(arr[i], 16) >> 8) & 0xff;
-    buf[i * 4 + 1] = (parseInt(arr[i], 16) >> 16) & 0xff;
-    buf[i * 4 + 0] = (parseInt(arr[i], 16) >> 24) & 0xff;
+    programBuffer[i * 4 + 3] = (parseInt(arr[i], 16) >> 0) & 0xff;
+    programBuffer[i * 4 + 2] = (parseInt(arr[i], 16) >> 8) & 0xff;
+    programBuffer[i * 4 + 1] = (parseInt(arr[i], 16) >> 16) & 0xff;
+    programBuffer[i * 4 + 0] = (parseInt(arr[i], 16) >> 24) & 0xff;
   }
-  const progsize = buf.length;
+  const progsize = programBuffer.length;
   console.log(`progsize is ${progsize}`);
 
   let sizeBuffer = Buffer.allocUnsafe(4); // Init buffer without writing all data to zeros
@@ -55,9 +55,16 @@ async function encode_for_uart_boot(arr: string[], device: string) {
   //   console.log(Array.from(buf).map(i2hex).join(" "));
   //   console.log(Buffer.from(buf).toString("hex"));
 
-  const combinedArray = Uint8Array.from([...sizeBuffer, ...buf, 0, 0, 0, 0]);
+  const combinedArray = Uint8Array.from([
+    ...sizeBuffer,
+    ...programBuffer,
+    0,
+    0,
+    0,
+    0,
+  ]);
   console.log(Array.from(combinedArray).map(i2hex).join(" "));
-
+  const programBufferForVerification = Buffer.from(programBuffer);
   console.log("sending over uart!");
 
   const port = new SerialPort(device, {
@@ -73,7 +80,7 @@ async function encode_for_uart_boot(arr: string[], device: string) {
   port.on("error", function (err) {
     console.log("serial Error: ", err.message);
   });
-
+  var verificationBuffer = Buffer.from([]);
   port.open(async function (err) {
     if (err) {
       return console.log("Error opening port: ", err.message);
@@ -84,26 +91,40 @@ async function encode_for_uart_boot(arr: string[], device: string) {
     console.log("port has opened");
     await sleep(2500);
 
-    // for (const value of combinedArray) {
-    //   port.write(Buffer.from([value]), function (err) {
-    //     if (err) {
-    //       return console.log("Error on serial write: ", err.message);
-    //     }
-    //     console.log(`byte written ${[value]}`);
-    //   });
-    //   //   await sleep(20);
-    // }
+    for (const value of combinedArray) {
+      port.write(Buffer.from([value]), function (err) {
+        if (err) {
+          return console.log("Error on serial write: ", err.message);
+        }
+        console.log(`byte written ${[value]}`);
+      });
+      await sleep(20);
+    }
 
-    port.write(Buffer.from(combinedArray), function (err) {
-      if (err) {
-        return console.log("Error on serial write: ", err.message);
-      }
-      console.log("message written");
-    });
+    // port.write(Buffer.from(combinedArray), async function (err) {
+    //   if (err) {
+    //     return console.log("Error on serial write: ", err.message);
+    //   }
+    console.log("message written");
+
+    await sleep(1000); // wait for verification to come back
+    console.log("took a nap");
+    if (verificationBuffer.equals(programBuffer)) {
+      console.log("verified loaded code!");
+    } else {
+      console.log(
+        "Error, verification failed, loaded code does not match exactly"
+      );
+      console.log(
+        `Correct length ${programBuffer.length}  actual length ${verificationBuffer.length}`
+      );
+    }
+    // });
   });
 
-  port.on("data", function (data) {
-    console.log("got seral Data:", data);
+  port.on("data", function (data: Buffer) {
+    console.log("got serial Data:", data);
+    verificationBuffer = Buffer.concat([verificationBuffer, data]);
   });
 
   //   fs.writeFileSync(file, buf, {
@@ -159,7 +180,6 @@ function uart_boot_main() {
 
   //   exit(0);
 }
-console.log("wtf");
 if (require.main === module) {
   uart_boot_main();
 }

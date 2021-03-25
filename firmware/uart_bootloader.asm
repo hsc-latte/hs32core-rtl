@@ -78,9 +78,46 @@ read_prog_loop:
     BGE read_prog_loop                        ; Branch if greater than, go back to start
     ; B   start_hello          ; else read the next program word
 
+
+; All done loading code, now print code out to verify it
+    MOV r11, 0                  ; reset the pointer to code to 0
+
+
+print_code_loop:
+    LDR r6 <- [r10+r11]
+    ; MOV r2 <- r6 shr 24
+    ; AND r2 <- r6 & FFh
+    ; CMP r2, 0                 ; check if character is 0 (strings)
+    CMP r8, r11                 ; Compare program pointer with size to read
+    BEQ end_print_code
+    MOV r2 <- r6 shr 24
+    BL write_code
+    MOV r2 <- r6 shr 16
+    BL write_code
+    MOV r2 <- r6 shr 8
+    BL write_code
+    MOV r2 <- r6
+    BL write_code
+    ADD r11 <- r11 + 4
+    B print_code_loop
+
+write_code:
+    MOV r3 <- 1                 ; Do TX write
+    AND r2 <- r2 & FFh          ; only fill the low bytes, write 8 bits at a time
+    STR [r0+B0h] <- r2
+    STR [r0+B8h] <- r3
+
+waittx_code:
+    LDR r4 <- [r0+B8h]
+    TST r4, 20h                 ; Test TX busy bit
+    BNE waittx_code
+    MOV pc <- lr                ; Return
+
+; All done printing code, now run it.
+end_print_code:
+
     MOV  pc <- r10              ; jump to loaded code
 
-    B start_hello
     ; MOV r2 <- 0400h             ; Turn on green LED
     ; STR [r0+84h] <- r2
     ;B 0                        ; loop forever
