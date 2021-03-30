@@ -35,7 +35,11 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function encode_for_uart_boot(arr: string[], device: string) {
+async function encode_for_uart_boot(
+  arr: string[],
+  device: string,
+  iceDevice: string | null | undefined
+) {
   let programBuffer = new Uint8Array(arr.length * 4);
 
   for (let i = 0; i < arr.length; i++) {
@@ -74,13 +78,55 @@ async function encode_for_uart_boot(arr: string[], device: string) {
     stopBits: 1,
     dataBits: 8,
   });
-  await sleep(50);
+  if (iceDevice) {
+    var icePort = new SerialPort(iceDevice, {
+      baudRate: 9600,
+      autoOpen: false,
+      parity: "none",
+      stopBits: 1,
+      dataBits: 8,
+    });
+    icePort.on("error", function (err) {
+      console.log("icePort serial Error: ", err.message);
+    });
+    icePort.on("data", function (data: Buffer) {
+      console.log("got icewerx serial Data:", data);
+    });
+    icePort.open(async function (err) {
+      if (err) {
+        return console.log("Error opening ice port: ", err.message);
+      }
+
+      // two commands: reset FPGA, release FPGA
+      // the first responds with 3 bytes of Flash version.
+      // the second responds with 1 byte (dont know what the byte is for yet)
+      // for (const value of [0xb2, 0xb9]) {
+      // for (const value of [0xb2, 0xb9]) {
+      //   icePort.write(Buffer.from([value]), function (err) {
+      //     if (err) {
+      //       return console.log("Error on icewerx serial write: ", err.message);
+      //     }
+      //     console.log(`byte written ${[value]}`);
+      //   });
+      //   await sleep(500);
+      // }
+    });
+  }
 
   // Open errors will be emitted as an error event
   port.on("error", function (err) {
     console.log("serial Error: ", err.message);
   });
+
+  await sleep(50);
+
   var verificationBuffer = Buffer.from([]);
+
+  port.on("data", function (data: Buffer) {
+    console.log("got cpu serial Data:", data);
+    verificationBuffer = Buffer.concat([verificationBuffer, data]);
+  });
+
   port.open(async function (err) {
     if (err) {
       return console.log("Error opening port: ", err.message);
@@ -89,8 +135,22 @@ async function encode_for_uart_boot(arr: string[], device: string) {
     // Because there's no callback to write, write errors will be emitted on the port:
     // port.write('main screen turn on')
     console.log("port has opened");
-    await sleep(2500);
 
+    await sleep(1000);
+    if (iceDevice) {
+      console.log("have icewerx device, now rebooting");
+      for (const value of [0xb2, 0xb9]) {
+        icePort.write(Buffer.from([value]), function (err) {
+          if (err) {
+            return console.log("Error on icewerx serial write: ", err.message);
+          }
+          console.log(`byte written ${[value]}`);
+        });
+        await sleep(500);
+      }
+    } else {
+      console.log("no icewerx device available, not rebooting");
+    }
     for (const value of combinedArray) {
       port.write(Buffer.from([value]), function (err) {
         if (err) {
@@ -100,6 +160,8 @@ async function encode_for_uart_boot(arr: string[], device: string) {
       });
       await sleep(20);
     }
+    // clear the receive buffer as we just rebooted
+    verificationBuffer = Buffer.from([]);
 
     // port.write(Buffer.from(combinedArray), async function (err) {
     //   if (err) {
@@ -118,13 +180,19 @@ async function encode_for_uart_boot(arr: string[], device: string) {
       console.log(
         `Correct length ${programBuffer.length}  actual length ${verificationBuffer.length}`
       );
+
+      //   console.log("now rebooting");
+      //   for (const value of [0xb2, 0xb9]) {
+      //     icePort.write(Buffer.from([value]), function (err) {
+      //       if (err) {
+      //         return console.log("Error on icewerx serial write: ", err.message);
+      //       }
+      //       console.log(`byte written ${[value]}`);
+      //     });
+      //     await sleep(500);
+      //   }
     }
     // });
-  });
-
-  port.on("data", function (data: Buffer) {
-    console.log("got serial Data:", data);
-    verificationBuffer = Buffer.concat([verificationBuffer, data]);
   });
 
   //   fs.writeFileSync(file, buf, {
@@ -161,8 +229,14 @@ function uart_boot_main() {
   parser.add_argument("-d", "--device", {
     help: "output serial device ",
     metavar: "[device]",
-    required: false,
+    required: true,
     default: "./",
+  });
+  parser.add_argument("-x", "--icedevice", {
+    help: "output serial icewerx device ",
+    metavar: "[icedevice]",
+    required: false,
+    default: null,
   });
   const args = parser.parse_args(process.argv.slice(2));
 
@@ -172,7 +246,7 @@ function uart_boot_main() {
     const prog = parse(normalize(fs.readFileSync(args.input, "utf8")));
     const size = 1024;
 
-    encode_for_uart_boot(isa.tohexarray(prog), args.device);
+    encode_for_uart_boot(isa.tohexarray(prog), args.device, args.icedevice);
   } else {
     console.error("Input file does not exist");
     exit(-1);
