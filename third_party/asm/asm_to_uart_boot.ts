@@ -158,7 +158,7 @@ async function encode_for_uart_boot(
         }
         console.log(`byte written ${[value]}`);
       });
-      await sleep(20);
+      // await sleep(20);
     }
     // clear the receive buffer as we just rebooted
     verificationBuffer = Buffer.from([]);
@@ -171,6 +171,10 @@ async function encode_for_uart_boot(
 
     await sleep(1000); // wait for verification to come back
     console.log("took a nap");
+    if (verificationBuffer.length > programBuffer.length) {
+      console.log("trimming received verification bytes");
+      verificationBuffer = verificationBuffer.slice(0, programBuffer.length);
+    }
     if (verificationBuffer.equals(programBuffer)) {
       console.log("verified loaded code!");
     } else {
@@ -180,6 +184,20 @@ async function encode_for_uart_boot(
       console.log(
         `Correct length ${programBuffer.length}  actual length ${verificationBuffer.length}`
       );
+
+      for (
+        var i = 0;
+        i < Math.min(programBuffer.length, verificationBuffer.length);
+        i++
+      ) {
+        const correctChar = programBuffer[i];
+        const actualChar = verificationBuffer[i];
+        if (correctChar !== actualChar) {
+          console.log(
+            `bytes differ: index ${i} \t correct ${correctChar} actual ${actualChar} `
+          );
+        }
+      }
 
       //   console.log("now rebooting");
       //   for (const value of [0xb2, 0xb9]) {
