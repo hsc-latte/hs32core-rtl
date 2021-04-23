@@ -18,6 +18,8 @@
  * @date   Created on October 29 2020, 6:15 PM
  */
 
+`default_nettype none
+
 `define FPGA
 
 `include "cpu/hs32_cpu.v"
@@ -28,6 +30,10 @@
 `include "soc/dev_timer.v"
 `include "soc/dev_uart.v"
 `include "frontend/sram.v"
+
+`ifdef SIM
+    `include "third_party/yosys/techlibs/ice40/cells_sim.v"
+`endif
 
 module main (
     input   wire CLK,
@@ -55,16 +61,23 @@ module main (
     output OE_N, output WE_N, output ALE0, output ALE1, output BHE_N,
 
     // OE BYTEn
-    output reg OE_BY0_N, output reg OE_BY1_N,
-    output reg OE_BY2_N, output reg OE_BY3_N
+    output OE_BY0_N, output OE_BY1_N,
+    output OE_BY2_N, output OE_BY3_N
 );
     parameter data0 = "bench/bram0.hex";
     parameter data1 = "bench/bram1.hex";
     parameter data2 = "bench/bram2.hex";
     parameter data3 = "bench/bram3.hex";
     parameter RST_BITS = 16;
+    parameter GEN_DIVIDER = 0;
 
-    wire clk = CLK;
+generate
+    wire clk = GEN_DIVIDER == 0 ? CLK : clk_div;
+    reg clk_div = 0;    
+    always @(posedge CLK)
+        clk_div = ~clk_div;
+endgenerate
+    
     reg[RST_BITS-1:0] ctr = 0;
     always @(posedge clk)
     if(!RST_N) begin
@@ -77,10 +90,12 @@ module main (
     wire rst = !ctr[RST_BITS-1] && (ctr != 0);
 
     // Address latch OE pulldown
-    initial OE_BY0_N = 0;
-    initial OE_BY1_N = 0;
-    initial OE_BY2_N = 0;
-    initial OE_BY3_N = 0;
+    reg oe_byn_n;
+    assign OE_BY0_N = oe_byn_n;
+    assign OE_BY1_N = oe_byn_n;
+    assign OE_BY2_N = oe_byn_n;
+    assign OE_BY3_N = oe_byn_n;
+    always @(posedge clk) oe_byn_n <= 0;
 
     //===============================//
     // External I/O Bus Signals
@@ -89,14 +104,22 @@ module main (
     wire we, oe, oe_neg, ale0_neg, ale1_neg, bhe, isout;
     wire[15:0] data_in;
     wire[15:0] data_out;
-    assign { IO15, IO14, IO13, IO12, IO11, IO10, IO9, IO8,
-             IO7, IO6, IO5, IO4, IO3, IO2, IO1, IO0 } = isout ? data_out : 16'bz;
-    assign data_in = { IO15, IO14, IO13, IO12, IO11, IO10, IO9, IO8, IO7, IO6, IO5, IO4, IO3, IO2, IO1, IO0 };
-    assign OE_N = !(oe & oe_neg);
     assign WE_N = !we;
     assign ALE0 = ale0_neg;
     assign ALE1 = ale1_neg;
+    assign OE_N = !(oe & oe_neg);
     assign BHE_N = !bhe;
+
+    SB_IO #(
+        .PIN_TYPE(6'b1010_01)
+    ) sb_adbus[15:0] (
+        .PACKAGE_PIN({
+            IO15, IO14, IO13, IO12, IO11, IO10, IO9, IO8,
+            IO7, IO6, IO5, IO4, IO3, IO2, IO1, IO0 }),
+        .OUTPUT_ENABLE(isout),
+        .D_OUT_0(data_out),
+        .D_IN_0(data_in)
+    );
 
     //===============================//
     // Main CPU core
@@ -107,7 +130,7 @@ module main (
     wire userbit;
 
     hs32_cpu #(
-        .IMUL(1), .BARREL_SHIFTER(2),
+        .IMUL(0), .BARREL_SHIFTER(1),
         .PREFETCH_SIZE(1), .LOW_WATER(1)
     ) cpu (
         .i_clk(clk), .reset(rst),
@@ -236,23 +259,20 @@ module main (
     wire io0 = t0_io_oe ? t0_io_out : io_out_buf[0];
 
     // GPIO assignments
-    assign GPIO0 = io_oeb_buf[0] ? io0 : 1'bz;
-    assign GPIO1 = io_oeb_buf[1] ? io_out_buf[1] : 1'bz;
-    assign GPIO2 = io_oeb_buf[2] ? io_out_buf[2] : 1'bz;
-    assign GPIO3 = io_oeb_buf[3] ? io_out_buf[3] : 1'bz;
-    assign GPIO4 = io_oeb_buf[4] ? io_out_buf[4] : 1'bz;
-    assign GPIO5 = io_oeb_buf[5] ? io_out_buf[5] : 1'bz;
-    assign GPIO6 = io_oeb_buf[6] ? io_out_buf[6] : 1'bz;
-    assign GPIO7 = io_oeb_buf[7] ? io_out_buf[7] : 1'bz;
-    assign GPIO8 = io_oeb_buf[8] ? io_out_buf[8] : 1'bz;
+    SB_IO #(
+        .PIN_TYPE(6'b1010_01)
+    ) sb_gpio[8:0] (
+        .PACKAGE_PIN({
+            GPIO8, GPIO7, GPIO6, GPIO5, GPIO4,
+            GPIO3, GPIO2, GPIO1, GPIO0
+        }),
+        .OUTPUT_ENABLE(io_oeb_buf[8:0]),
+        .D_OUT_0({ io_out_buf[8:1], io0 }),
+        .D_IN_0(io_in[8:0])
+    );
     assign LEDR_N = ~(io_out_buf[11] | rst);
     assign LEDG_N = ~io_out_buf[10];
-    assign io_in = {
-        io_out_buf[11], io_out_buf[10],
-        GPIO9, GPIO8,
-        GPIO7, GPIO6, GPIO5, GPIO4,
-        GPIO3, GPIO2, GPIO1, GPIO0
-    };
+    assign io_in[11:9] = { io_out_buf[11], io_out_buf[10], GPIO9 };
 
     //===============================//
     // Timer
@@ -328,8 +348,8 @@ module main (
     wire[31:0] sram_addr = { ~ram_addr[31], ram_addr[31], ram_addr[29:0] };
 
     ext_sram #(
-        .SRAM_LATCH_LAZY(1),
-        .SRAM_STALL_CYC(1)
+        .SRAM_LATCH_LAZY(0),
+        .SRAM_STALL_CYC(2)
     ) sram (
         .clk(clk), .reset(rst || flush),
         // Memory requests

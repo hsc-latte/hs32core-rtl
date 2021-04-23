@@ -78,24 +78,24 @@ module main (
     initial LEDR_N = 1;
     always @(posedge clk1) case(fsm)
         3'b000: begin
+            fsm <= 3'b001;
             rw <= 1;
             valid <= 1;
-            dtw <= 32'h00AA_00FF;
-            addri <= { 32'h00FF_0001 };
-            fsm <= 3'b001;
+            dtw <= 32'hFFFF_FFFF;
+            addri <= { 32'h0001_0000 };
             LEDR_N <= 1;
         end
         3'b001: if(done) begin
-            rw <= 0;
             fsm <= 3'b010;
+            rw <= 0;
         end
         3'b010: begin
             fsm <= 3'b011;
             valid <= 0;
+            data_final <= dtr;
         end
         3'b011: if(done) begin
             fsm <= 3'b100;
-            data_final <= dtr;
             LEDR_N <= 0;
         end
         default: begin end
