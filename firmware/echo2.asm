@@ -10,7 +10,8 @@
 ; SRAM addresses start from 0x1000 and end at 0x80000 (512 kib - 4 kib).
 
     MOV r10, FFFFh              ; Setup buffer address
-    ADD r10, r10, 1
+    ADD r10, r10, FFFFh
+    ADD r10, r10, 2
     MOV r11, 0
 
 waitrx:

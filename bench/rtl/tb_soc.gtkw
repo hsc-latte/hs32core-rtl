@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
-[*] Sun Jan 31 04:04:06 2021
+[*] Sun Apr 04 04:52:02 2021
 [*]
-[dumpfile] "c:\Users\Kevin\Desktop\Projects\fpga\caravel-hs32core\verilog\rtl\hs32cpu\build\dump.vcd"
-[dumpfile_mtime] "Sun Jan 31 04:03:30 2021"
-[dumpfile_size] 738334
-[savefile] "C:\Users\Kevin\Desktop\Projects\fpga\caravel-hs32core\verilog\rtl\hs32cpu\bench\rtl\tb_soc.gtkw"
-[timestart] 44
+[dumpfile] "c:\Users\Kevin\Desktop\Projects\fpga\hs32core-rtl\build\tb\dump.vcd"
+[dumpfile_mtime] "Sun Apr 04 04:51:48 2021"
+[dumpfile_size] 991214
+[savefile] "C:\Users\Kevin\Desktop\Projects\fpga\hs32core-rtl\bench\rtl\tb_soc.gtkw"
+[timestart] 94300
 [size] 1536 801
 [pos] -1 -1
-*-5.896852 203 197 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-14.795072 166750 197 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_soc.
 [treeopen] tb_soc.top.
 [sst_width] 275
@@ -17,7 +17,6 @@
 [sst_expanded] 1
 [sst_vpaned_height] 251
 @28
-tb_soc.top.cpu.i_clk
 tb_soc.top.cpu.reset
 @200
 -
@@ -351,5 +350,27 @@ tb_soc.top.sram.we
 tb_soc.top.sram.dtr[31:0]
 @1401200
 -SRAM
+@800200
+-IO
+@28
+tb_soc.top.cpu.i_clk
+tb_soc.top.sram.state[2:0]
+@29
+[color] 2
+tb_soc.top.ALE0
+@28
+[color] 2
+tb_soc.top.ALE1
+tb_soc.top.BHE_N
+tb_soc.top.OE_N
+tb_soc.top.WE_N
+tb_soc.top.isout
+@22
+tb_soc.top.data_in[15:0]
+tb_soc.top.data_out[15:0]
+@28
+tb_soc.top.sram.state[2:0]
+@1000200
+-IO
 [pattern_trace] 1
 [pattern_trace] 0

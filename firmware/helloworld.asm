@@ -6,7 +6,7 @@
     STR [r0+80h] <- r1
 
     ADD r1 <- pc + data         ; Calculate absolute address of data
-    ADD r1 <- r1 + 1            ; Offset by (-3 + 4)
+    SUB r1 <- r1 - 4            ; Offset by (-3 - 4)
 
 loop:
     LDR r2 <- [r1]

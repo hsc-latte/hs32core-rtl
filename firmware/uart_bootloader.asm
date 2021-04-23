@@ -10,7 +10,7 @@
 ; print the hello message
     STR [r0+80h] <- r1
 start_hello:
-    ADD r1 <- pc + hello_msg         ; Calculate absolute address of data
+    ADD r1 <- pc + hello_msg    ; Calculate absolute address of data
     SUB r1 <- r1 - 7            ; Offset by (-3 - 4)
 hello_loop:
     LDR r2 <- [r1]
@@ -56,7 +56,7 @@ end_hello:
     ; r11 = program current pointer
 
     MOV r10, FFFFh              ; Setup base program address
-    ADD r10, r10, 1
+    ADD r10, r10, 9
     MOV r11, 0                  
 
 read_prog_loop:

@@ -41,10 +41,10 @@ module tb_soc;
     assign ad = oe ? 16'bz : out;
 
     main #(
-        .data0("../bench/bram0.hex"),
-        .data1("../bench/bram1.hex"),
-        .data2("../bench/bram2.hex"),
-        .data3("../bench/bram3.hex"),
+        .data0("../../bench/bram0.hex"),
+        .data1("../../bench/bram1.hex"),
+        .data2("../../bench/bram2.hex"),
+        .data3("../../bench/bram3.hex"),
         .RST_BITS(3)
     ) top (
         .CLK(clk), .RST_N(reset),
