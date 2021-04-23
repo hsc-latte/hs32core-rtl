@@ -4,6 +4,16 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Build icefunprog debug",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "third_party/icefunprog"
+            ]
+        },
+
+        {
             "label": "Build icefunprog",
             "type": "shell",
             "command": "dotnet",
@@ -26,6 +36,16 @@
                     "-r", "osx-x64",
                     "--self-contained", "false"
                 ]
+            },
+            "linux": {
+                "args": [
+                    "publish",
+                    "third_party/icefunprog",
+                    "-c", "Release",
+                    "-o", "build/icefunprog",
+                    "-r", "linux-x64",
+                    "--self-contained", "false"
+                ]
             }
         },
         ////////////////////////////////////////////////////////////////
@@ -37,7 +57,7 @@
             "args": [
                 "-QT",
                 "-D${input:type}",
-                "-p", "synth_ice40 -retime -relut -abc2 -json build/hardware.json",
+                "-p", "synth_ice40 -relut -abc2 -json build/hardware.json; write_verilog -noattr build/out.v",
                 "top.v"
             ],
             "problemMatcher": []
@@ -50,10 +70,10 @@
             "args": [
                 "--hx8k",
                 "--package", "cb132",
-                "--freq", "16",
-                //"--opt-timing",
-                //"--router", "router1",
-                //"--placer", "sa",
+                "--freq", "25",
+                "--opt-timing",
+                "--router", "router1",
+                "--placer", "sa",
                 "--starttemp", "1000",
                 "--json", "build/hardware.json",
                 "--asc", "build/hardware.asc",
@@ -75,6 +95,21 @@
         },
         ////////////////////////////////////////////////////////////////
         {
+            "label": "4. icetime",
+            "detail": "Generate timing report",
+            "command": "icetime",
+            "args": [
+                "-d", "hx8k",
+                "-p", "pins.pcf",
+                "-P", "cb132",
+                "-t", "-m",
+                "-c", "24",
+                //"-r", "build/report.txt",
+                "build/hardware.asc"
+            ]
+        },
+        ////////////////////////////////////////////////////////////////
+        {
             "label": "Upload to FPGA",
             "detail": "Upload to FPGA (must have it plugged in)",
             "command": "dotnet",
@@ -92,7 +127,7 @@
             "dependsOrder": "sequence",
             "type": "shell",
             "command": "echo Hi",
-            "dependsOn": [ "1. yosys", "2. nextpnr", "3. icepack" ],
+            "dependsOn": [ "1. yosys", "2. nextpnr", "3. icepack", "4. icetime" ],
             "group": {
                 "kind": "build",
                 "isDefault": true

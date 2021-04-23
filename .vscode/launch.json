@@ -8,10 +8,10 @@
             "name": ".NET Core Launch (console)",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "Build icefunprog debug",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/third_party/icefunprog/bin/Debug/netcoreapp3.1/iceFUNprog.dll",
-            "args": [],
+            "args": [ "list" ],
             "cwd": "${workspaceFolder}/third_party/icefunprog",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",

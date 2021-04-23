@@ -37,6 +37,6 @@
         }
     ],
     "verilog.linting.linter": "verilator",
-    "verilog.icarusCompileArguments": "-DSIM -g2012",
-    "verilog.icarusPersistentBuild": true
+    "verilog.icarusCompileArguments": "-DSIM -g2012 ",
+    "verilog.icarusBuildDirectory": "build/tb"
 }
