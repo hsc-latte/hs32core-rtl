@@ -1,3 +1,6 @@
+# sphinx
+docs/_build
+
 # icarus simulation
 build/
 
