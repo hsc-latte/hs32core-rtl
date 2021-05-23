@@ -1,4 +1,3 @@
-.. HS32 ISA Specification
 .. raw:: html
 
     <style>
@@ -8,6 +7,13 @@
             margin-bottom: 0px !important;
         }
     </style>
+
+.. |br| raw:: latex
+
+   \\
+
+.. role:: u
+    :class: underline
 
 Base ISA Specification
 ===============================================================================
@@ -67,7 +73,7 @@ MCR and PC.
           routine is made to use only r8 to r13 as the current execution context
           does not need to be saved.
 
-The following figure describes the contents of the MCR:
+The following figure describes the contents of the MCR: |br|
 
 .. bitfield::
     :bits: 32
@@ -98,7 +104,7 @@ mcr[23:14] --      Debug flags (documented below)
 mcr[31:24] DSn     Debug step amount
 ========== ======= ============================================================
 
-The following figure describes the debug flags:
+The following figure describes the debug flags: |br|
 
 .. bitfield::
     :bits: 10
@@ -133,7 +139,7 @@ mcr[22:22]  DBGi_R  Current breakpoint type: "Break on memory read"
 mcr[23:23]  DBGi_W  Current breakpoint type: "Break on memory write"
 ========== ======== ===========================================================
 
-The following figure describes the flags register:
+The following figure describes the flags register: |br|
 
 .. bitfield::
     :bits: 32
@@ -149,12 +155,8 @@ The following figure describes the flags register:
             { "name": "Reserved", "bits": 20, "type": 1 }
         ]
 
-.. role:: underline
-    :class: underline
-
-where NZCV are the standard ALU arithmetic flags:
-:underline:`N`\ egative, :underline:`Z`\ ero,
-:underline:`C`\ arry and o\ :underline:`V`\ erflow.
+where NZCV are the standard ALU arithmetic flags: :u:`N`\ egative, :u:`Z`\ ero,
+:u:`C`\ arry and o\ :u:`V`\ erflow.
 
 Encoding formats
 -------------------------------------------------------------------------------
