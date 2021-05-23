@@ -2,6 +2,7 @@
 
 [![](https://img.shields.io/badge/License-Apache-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
 [![](https://img.shields.io/static/v1?label=HS32&message=RTL&color=orange&style=flat-square)]()
+[![Documentation Status](https://readthedocs.org/projects/hs32core-rtl/badge/?version=latest&style=flat-square)](https://hs32core-rtl.readthedocs.io/en/latest/?badge=latest)
 
 ## Table of Contents
 
