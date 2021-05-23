@@ -1,20 +1,13 @@
-.. HS32 documentation master file, created by
-   sphinx-quickstart on Sat May 22 12:51:01 2021.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to HS32's documentation!
-================================
+===============================================================================
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
-   :caption: Contents:
+   
+   isa
 
 
+The documentation contains the following sections:
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+- :doc:`isa` describes the instruction set architecture

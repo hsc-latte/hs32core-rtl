@@ -1,4 +1,5 @@
 # sphinx
+env/
 docs/_build
 
 # icarus simulation
