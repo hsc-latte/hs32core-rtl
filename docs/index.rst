@@ -1,13 +1,16 @@
-Welcome to HS32's documentation!
-===============================================================================
-
 .. toctree::
    :hidden:
-   :maxdepth: 2
-   
+   :maxdepth: 3
+
+   intro
    isa
 
+.. only:: html
 
-The documentation contains the following sections:
+   HS32 rev2 Documentation
+   ===============================================================================
 
-- :doc:`isa` describes the instruction set architecture
+   The documentation contains the following sections:
+
+   - :doc:`intro` contains general information about the HS32 ISA and SoC
+   - :doc:`isa` describes the instruction set architecture

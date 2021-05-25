@@ -6,6 +6,12 @@
         .rst-content dl p {
             margin-bottom: 0px !important;
         }
+        .opcode-table tr td:last-child code {
+            background: none !important;
+            border: none !important;
+            padding: 0px !important;
+            font-size: 90% !important;
+        }
     </style>
 
 .. |br| raw:: latex
@@ -18,10 +24,11 @@
 Base ISA Specification
 ===============================================================================
 
-Changelog since rev1 (codename: latte). Updated May/22/2021.
+Changelog since rev1.
 
-- Removed user mode and added extra banks for IRQ mode.
-- Moved MCR to the flags bank, freeing up one more GPR. FP can be r11/r12 now.
+- Removed user mode and added extra banks for IRQ mode
+- Moved MCR to the flags bank, freeing up one more GPR
+- Moved NZCV from flags[31:28] to flags[11:8]
 
 Unprivileged register model
 -------------------------------------------------------------------------------
@@ -34,9 +41,9 @@ Below is a table of the register banks across all modes. Supervisor mode is
 the default state of the processor while IRQ mode is entered upon an interrupt.
 
 +-----------+-------------------------+-------------------------------------+
-| Encoding  | Mode and bank           | Description                         |
+| Encoding  | Mode (bank)             | Description                         |
 |           +---------------+---------+                                     |
-|           | Supervisor    | IRQ     |                                     |
+|           | Supervisor (1)| IRQ (2) |                                     |
 +===========+===============+=========+=====================================+
 | 0000      | r0                      | General purpose                     |
 +-----------+-------------------------+-------------------------------------+
@@ -56,15 +63,20 @@ the default state of the processor while IRQ mode is entered upon an interrupt.
 +-----------+---------------+---------+-------------------------------------+
 | 1111      | pc                      | Program counter                     |
 +-----------+---------------+---------+-------------------------------------+
-| 0000 [2]_ | flags_s       | flags_i | Program status register             |
-+-----------+---------------+---------+-------------------------------------+
-| 0001 [2]_ | mcr                     | Machine configuration register      |
-+-----------+---------------+---------+-------------------------------------+
+
++-----------+-------------------------+-------------------------------------+
+| Encoding  | Bank 3                  | Description                         |
++===========+=========================+=====================================+
+| 0000      | flags                   | Program status register             |
++-----------+-------------------------+-------------------------------------+
+| 0001      | mcr                     | Machine configuration register      |
++-----------+-------------------------+-------------------------------------+
+| ...       | Reserved                | Reserved for future use             |
++-----------+-------------------------+-------------------------------------+
 
 .. [1] By convention, r11/r12 and r13 are assigned as the frame and stack
        pointers respectively. Their contents do not influence the documented
        behaviour of the instructions.
-.. [2] Can only be accessed through the "flags" bank
 
 As can be seen, the supervisor and IRQ modes only share registers r0 to r7,
 MCR and PC.
@@ -166,12 +178,12 @@ fixed 32-bits long and must be aligned on a 4-byte boundary in memory.
 
 .. note:: The behaviour of executing from an unaligned address is undefined.
 
-Furthermore, each encoding has its operand, destination register (Rd) and source
+Furthermore, each encoding has its opcode, destination register (Rd) and source
 register (Rm) fields in the same position to simplify decoding.
 
 **I-Type**:
     Describes an operation involving Rd, Rm and a 16-bit immediate value.
-    The immediate will be reconstructed as a 32-bit value, with bits ``imm[31:16]``
+    The immediate will be reconstructed as a sign-extended 32-bit value, with bits ``imm[31:16]``
     set to ``imm[15]``.
 
 .. bitfield::
@@ -188,7 +200,7 @@ register (Rm) fields in the same position to simplify decoding.
 
 **R-Type**:
     Describes an operation involving Rd, Rm and Rn. The register bank of
-    Rm is dictated by the bank field [3]_. The shift direction and amount is
+    Rm is dictated by the bank field [2]_. The shift direction and amount is
     encoded by ``sh`` and ``dir`` and is applied to Rn only.
 
 .. bitfield::
@@ -207,6 +219,92 @@ register (Rm) fields in the same position to simplify decoding.
             { "name": "opcode", "bits": 8, "attr": "" }
         ]
 
-.. [3] Only applicable for selected instructions. Otherwise, the field is ignored.
+.. [2] Only applicable for selected instructions. Otherwise, the field is ignored.
+
+The fields of ``bank`` and ``sh`` are described in the table below.
+
+=== =========================== ==== ===========================
+dir Description                 bank Description
+=== =========================== ==== ===========================
+00  Left shift                  00   Reserved
+01  Right shift                 01   Supervisor bank
+10  Sign extended right shift   10   Interrupt bank
+11  Rotate right                11   Bank 3
+=== =========================== ==== ===========================
+
+Reserved fields will result in undefined behaviour. Their values are unspecified
+and thus can be used to implement nonstandard extensions too the base ISA.
+In the standard HSC architecture implementing the HS32 rev2 ISA,
+reserved fields are ignored and will not generate an exception upon execution.
+
+Instruction table
+-------------------------------------------------------------------------------
+
+.. sss: m/x i/n d/x
+.. dd: xx, ad, mr, ma
+.. flags: r, W/R, f, g, DD, B
+
+.. rst-class:: opcode-table
+
+=====   ======================= === =========== ========================
+Instr   Operation               Enc Opcode      Internal control signals
+=====   ======================= === =========== ========================
+LDR_    Rd <- [imm]             I   TBD         ``mr -i- -------``
+\       Rd <- [Rm + imm]        I   TBD         ``mr mi- -------``
+\       Rd <- [Rm + sh(Rn)]     R   TBD         ``mr mn- ----DD-``
+STR_    [imm] <- Rd             I   TBD         ``ma -id -------``
+\       [Rm + imm] <- Rd        I   TBD         ``ma mid -------``
+\       [Rm + sh(Rn)] <- Rd     R   TBD         ``ma mnd ----DD-``
+MOVT    Rd.upper <- imm         I   TBD         ``ad -i- -------``
+MOV     Rd <- imm               I   TBD         ``ad -i- -------``
+\       Rd <- sh(Rn)            R   TBD         ``ad -n- ----DD-``
+\       Rd <- Rm_b              R   TBD         ``ad mi- -R----B``
+\       Rd_b <- Rm              R   TBD         ``ad mi- -W----B``
+ADD     Rd <- Rm + imm          I   TBD         ``ad mi- --f----``
+\       Rd <- Rm + sh(Rn)       R   TBD         ``ad mn- --f-DD-``
+ADDC    Rd <- Rm + imm + C      I   TBD         ``ad mi- --f----``
+\       Rd <- Rm + sh(Rn) + C   R   TBD         ``ad mn- --f-DD-``
+SUB     Rd <- Rm - imm          I   TBD         ``ad mi- --f----``
+\       Rd <- Rm - sh(Rn)       R   TBD         ``ad mn- --f-DD-``
+SUBC    Rd <- Rm - imm - C      I   TBD         ``ad mi- --f----``
+\       Rd <- Rm - sh(Rn) - C   R   TBD         ``ad mn- --f-DD-``
+RSUB    Rd <- imm - Rm          I   TBD         ``ad mi- r-f----``
+\       Rd <- sh(Rn) - Rm       R   TBD         ``ad mn- r-f-DD-``
+RSUBC   Rd <- imm - Rm - C      I   TBD         ``ad mi- r-f----``
+\       Rd <- sh(Rn) - Rm - C   R   TBD         ``ad mn- r-f-DD-``
+AND     Rd <- Rm & imm          I   TBD         ``ad mi- --f----``
+\       Rd <- Rm & sh(Rn)       R   TBD         ``ad mn- --f-DD-``
+BIC     Rd <- Rm & ~imm         I   TBD         ``ad mi- --f----``
+\       Rd <- Rm & sh(Rn)       R   TBD         ``ad mn- --f-DD-``
+OR      Rd <- Rm | imm          I   TBD         ``ad mi- --f----``
+\       Rd <- Rm | sh(Rn)       R   TBD         ``ad mn- --f-DD-``
+XOR     Rd <- Rm ^ imm          I   TBD         ``ad mi- --f----``
+\       Rd <- Rm ^ sh(Rn)       R   TBD         ``ad mn- --f-DD-``
+CMP     Rm - imm                I   TBD         ``-- mi- --f----``
+\       Rm - sh(Rn)             R   TBD         ``-- mn- --f-DD-``
+TST     Rm & imm                I   TBD         ``-- mi- --f----``
+\       Rm & sh(Rn)             R   TBD         ``-- mn- --f-DD-``
+B<c>    PC + Offset             I   TBD         ``-- -i- ---g---``
+B<c>L   PC + Offset             I   TBD         ``ad -n- r--g---``
+INT     imm                     I   TBD         ``0``
+=====   ======================= === =========== ========================
+
+Interal control signal specification
+-------------------------------------------------------------------------------
+
+TBD
+
+Instruction index
+-------------------------------------------------------------------------------
+
+LDR
+~~~
 
 
+
+STR
+~~~
+
+
+.. opcode[7:5]
+.. opcode[0:0]: Set when R-Type

@@ -16,9 +16,10 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'HS32'
-copyright = '2021, Kevin Dai'
+project = 'HS32 and HSC SoC Documentation'
 author = 'Kevin Dai'
+copyright = '2021, ' + author
+root_doc = 'index'
 
 # The full version, including alpha/beta/rc tags
 release = 'rev2'
@@ -56,3 +57,25 @@ html_static_path = ['_static']
 html_css_files = [
     'css/style.css',
 ]
+
+
+latex_documents = [(
+    root_doc, 'hs32.tex',
+    "HS32 ISA and HSC-SoC Architectures Programmer's Manual",
+    author, 'manual'
+)]
+latex_elements = {
+    'extraclassoptions': 'openany,oneside',
+    'release': 'Version',
+    'preamble': R'''
+        \protected\def\sphinxcrossref#1{#1}
+        \renewcommand{\baselinestretch}{1.0}
+    ''',
+    'fontpkg': R'''
+        \usepackage{tgtermes}
+        \usepackage{tgheros}
+        \renewcommand\ttdefault{txtt}
+        %% \renewcommand*\familydefault{\sfdefault}
+    ''',
+    'pointsize': '10pt'
+}
