@@ -18,6 +18,10 @@
 
    \\
 
+.. |bh| raw:: html
+
+    <br />
+
 .. role:: u
     :class: underline
 
@@ -38,8 +42,8 @@ The base HS32 ISA supports 13 general-purpose ``r`` registers in addition to
 the PC, LR and the special purpose FLAGS and MCR banked registers.
 All registers have a fixed length of 32-bits.
 
-Below is a table of the register banks across all modes. Supervisor mode is
-the default state of the processor and enters IRQ mode upon an interrupt.
+Below is a table of the register banks across all modes. The processor's default
+state is supervisor mode and enters IRQ mode upon an interrupt.
 
 +-----------+-------------------------+-------------------------------------+
 | Encoding  | Mode (bank)             | Description                         |
@@ -168,6 +172,7 @@ The following figure describes the flags register: |br|
             { "name": "Reserved", "bits": 20, "type": 1 }
         ]
 
+|bh|
 where NZCV are the standard ALU arithmetic flags: :u:`N`\ egative, :u:`Z`\ ero,
 :u:`C`\ arry and o\ :u:`V`\ erflow.
 
@@ -253,9 +258,11 @@ Instr   Operation               Enc Opcode      Internal control signals
 LDR_    Rd <- [imm]             I   TBD         ``mr -i- -------``
 \       Rd <- [Rm + imm]        I   TBD         ``mr mi- -------``
 \       Rd <- [Rm + sh(Rn)]     R   TBD         ``mr mn- ----DD-``
+\       Rd <- [Rm - sh(Rn)]     R   TBD         ``mr mn- ----DD-``
 STR_    [imm] <- Rd             I   TBD         ``ma -id -------``
 \       [Rm + imm] <- Rd        I   TBD         ``ma mid -------``
 \       [Rm + sh(Rn)] <- Rd     R   TBD         ``ma mnd ----DD-``
+\       [Rm - sh(Rn)] <- Rd     R   TBD         ``ma mnd ----DD-``
 MOV_    Rd <- imm               I   TBD         ``ad -i- -------``
 \       Rd <- sh(Rn)            R   TBD         ``ad -n- ----DD-``
 \       Rd <- Rm_b              R   TBD         ``ad mi- -R----B``
@@ -319,7 +326,7 @@ TBD     LDR Rd <- [Rm - sh(Rn)]     Load 4 bytes from address ``Rm-sh(Rn)`` to R
 ===     ========================    ===========================================
 
 **Flags and exceptions**
-    Will not affect ALU flags. May throw an #AC exception if alignment checking is 
+    ALU flags are not modified. May throw an #AC exception if alignment checking is 
     enabled and the address is not aligned to a 4-byte boundary.
 
 STR
@@ -344,10 +351,44 @@ TBD     STR [Rm - sh(Rn)] <- Rd     Store 4 bytes in Rd to address ``Rm-sh(Rn)``
 **Flags and exceptions**
     Same as `LDR`_.
 
-MOVT
-~~~~
-
-
-
 MOV
 ~~~
+**Description of MOV/Move**
+    If an immediate is specified, the reconstructed 32-bit immediate is placed
+    in the destination register. Otherwise, the value of the source register,
+    possibly shifted, is placed in the destination register. The bank field applies
+    to either the source or destination operand only when the banked MOV variant
+    is used.
+
+**Variants**
+
+.. rst-class:: opcode-table
+===     ========================    ===========================================
+Op      Mnemonic                    Summary
+===     ========================    ===========================================
+TBD     Rd <- imm                   Sets Rd to the value of imm
+TBD     Rd <- sh(Rn)                Sets Rd to the value of Rn, shifted.
+TBD     Rd <- Rm_b                  Sets Rd to the value of a banked source register.
+TBD     Rd_b <- Rm                  Sets the value of a banked destination register to Rm.
+===     ========================    ===========================================
+
+**Flags and exceptions**
+    ALU flags are not modified. This instruction generates no exceptions.
+
+MOVT
+~~~~
+**Description of MOVT/Move top**
+    Will overwrite the upper 16-bits of the destination register with
+    the specified 16-bit immediate.
+
+**Variants**
+
+.. rst-class:: opcode-table
+===     ========================    ===========================================
+Op      Mnemonic                    Summary
+===     ========================    ===========================================
+TBD     MOVT Rd <- imm              Replaces the upper 16-bits of Rd with ``imm``
+===     ========================    ===========================================
+
+**Flags and exceptions**
+    Same as `MOV`_.
