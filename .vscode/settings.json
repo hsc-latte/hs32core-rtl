@@ -38,5 +38,15 @@
     ],
     "verilog.linting.linter": "verilator",
     "verilog.icarusCompileArguments": "-DSIM -g2012 ",
-    "verilog.icarusBuildDirectory": "build/tb"
+    "verilog.icarusBuildDirectory": "build/tb",
+    "latex-workshop.latex.autoBuild.cleanAndRetry.enabled": false,
+    "latex-workshop.latex.autoBuild.run": "never",
+
+    "grammarly.audience": "expert",
+    "grammarly.dialect": "canadian",
+    "grammarly.domain": "technical",
+    "grammarly.severity": {
+        "Correctness": 4,
+        "Misspelled": 1
+    }
 }

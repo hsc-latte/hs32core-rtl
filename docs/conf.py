@@ -22,7 +22,8 @@ copyright = '2021, ' + author
 root_doc = 'index'
 
 # The full version, including alpha/beta/rc tags
-release = 'rev2'
+release = 'draft'
+version = 'rev2'
 
 
 # -- General configuration ---------------------------------------------------
@@ -61,21 +62,25 @@ html_css_files = [
 
 latex_documents = [(
     root_doc, 'hs32.tex',
-    "HS32 ISA and HSC-SoC Architectures Programmer's Manual",
+    "HS32 ISA and HSC-SoC Programmer's Manual",
     author, 'manual'
 )]
 latex_elements = {
     'extraclassoptions': 'openany,oneside',
-    'release': 'Version',
+    'releasename': 'Version',
     'preamble': R'''
         \protected\def\sphinxcrossref#1{#1}
-        \renewcommand{\baselinestretch}{1.0}
+        \renewcommand{\baselinestretch}{1.1}
     ''',
     'fontpkg': R'''
         \usepackage{tgtermes}
         \usepackage{tgheros}
         \renewcommand\ttdefault{txtt}
-        %% \renewcommand*\familydefault{\sfdefault}
+        \renewcommand*\familydefault{\sfdefault}
     ''',
     'pointsize': '10pt'
 }
+
+latex_additional_files = [
+    '_static/sphinxmanual.cls'
+]

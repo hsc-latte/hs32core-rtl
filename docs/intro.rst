@@ -28,11 +28,31 @@
 Introduction
 ===============================================================================
 
-HSC designs and develops both the ISA and SoC IPs indepedently.
-The HS32 ISA is implemented by the HS32 Core and is distinct from the
-from the SoC architecture.
+HSC designs and develops the HS32 ISA and HSC-SoC IPs. The HS32 ISA is
+implemented by the HS32 Core and is distinct from the from the SoC architecture.
+The terms HSC-SoC and HS32 SoC are used interchangeably.
 
-Open-source Licensing
+The HS32 Core supports the following
+
+- Three stage pipeline
+- Single cycle instruction latency
+- Support for both big and little endian systems
+- ...
+
+The HSC-SoC specification describes the following functions/features
+
+- Big endian
+- Wishbone interconnect
+- Interrupt controller supporting up to 24 interrupt lines
+- Cache controller for an n-way associative cache
+- Nonstandard external SRAM multiplexed bus
+
+Currently there are two versions of the HS32 Core
+
+- HS32 Latte Core (rev 1)
+- HS32 Mocha Core (rev 2)
+
+Open-source licensing
 -------------------------------------------------------------------------------
 
 This documentation, HS32 and all non third-party IPs and tools are
@@ -46,7 +66,7 @@ The HS32 SoC IPs are hosted on git at
 The HS32 SoC modified to integrate with Caravel can be found at
 `hsc-latte/caravel-hs32 <https://github.com/hsc-latte/caravel-hs32core>`_.
 
-Target Process Node
+Target process node
 -------------------------------------------------------------------------------
 
 Currently, the HS32 SoC design targets the 130nm Skywater process described in

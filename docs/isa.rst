@@ -29,16 +29,17 @@ Changelog since rev1.
 - Removed user mode and added extra banks for IRQ mode
 - Moved MCR to the flags bank, freeing up one more GPR
 - Moved NZCV from flags[31:28] to flags[11:8]
+- Changed PC to be the current instruction address (instead of cur+4)
 
 Unprivileged register model
 -------------------------------------------------------------------------------
 
-The base HS32 ISA supports 13 general purpose ``r`` registers in addition to
-the PC, LR special purpose and FLAGS, MCR banked registers.
+The base HS32 ISA supports 13 general-purpose ``r`` registers in addition to
+the PC, LR and the special purpose FLAGS and MCR banked registers.
 All registers have a fixed length of 32-bits.
 
 Below is a table of the register banks across all modes. Supervisor mode is
-the default state of the processor while IRQ mode is entered upon an interrupt.
+the default state of the processor and enters IRQ mode upon an interrupt.
 
 +-----------+-------------------------+-------------------------------------+
 | Encoding  | Mode (bank)             | Description                         |
@@ -74,22 +75,22 @@ the default state of the processor while IRQ mode is entered upon an interrupt.
 | ...       | Reserved                | Reserved for future use             |
 +-----------+-------------------------+-------------------------------------+
 
-.. [1] By convention, r11/r12 and r13 are assigned as the frame and stack
-       pointers respectively. Their contents do not influence the documented
-       behaviour of the instructions.
+.. [1] By convention, r11/r12 and r13 are the frame and stack pointers, 
+       respectively. Their contents do not influence the documented behaviour of 
+       the instructions.
 
-As can be seen, the supervisor and IRQ modes only share registers r0 to r7,
-MCR and PC.
+Registers r0-r7, MCR and PC are shared between the supervisor and IRQ modes. The 
+program counter holds the address of the current instruction.
 
-.. note:: Interrupt latency can be decreased if the interrupt service
-          routine is made to use only r8 to r13 as the current execution context
-          does not need to be saved.
+.. note:: Interrupt latency can be decreased if the interrupt service routine
+          only uses r8 to r13, as the current execution context does not
+          need to be saved.
 
 The following figure describes the contents of the MCR: |br|
 
 .. bitfield::
     :bits: 32
-    :vspace: 50
+    :vspace: 48
     :lanes: 1
 
         [
@@ -120,7 +121,7 @@ The following figure describes the debug flags: |br|
 
 .. bitfield::
     :bits: 10
-    :vspace: 50
+    :vspace: 48
     :lanes: 1
 
         [
@@ -155,7 +156,7 @@ The following figure describes the flags register: |br|
 
 .. bitfield::
     :bits: 32
-    :vspace: 50
+    :vspace: 48
     :lanes: 1
 
         [
@@ -173,18 +174,18 @@ where NZCV are the standard ALU arithmetic flags: :u:`N`\ egative, :u:`Z`\ ero,
 Encoding formats
 -------------------------------------------------------------------------------
 
-The base HS32 ISA describes 2 instruction encodings I/R. All instructions are a
+The base HS32 ISA describes 2 instruction encodings I/R. All instructions are a 
 fixed 32-bits long and must be aligned on a 4-byte boundary in memory.
 
 .. note:: The behaviour of executing from an unaligned address is undefined.
 
-Furthermore, each encoding has its opcode, destination register (Rd) and source
+Furthermore, each encoding has its opcode, destination register (Rd) and source 
 register (Rm) fields in the same position to simplify decoding.
 
 **I-Type**:
-    Describes an operation involving Rd, Rm and a 16-bit immediate value.
-    The immediate will be reconstructed as a sign-extended 32-bit value, with bits ``imm[31:16]``
-    set to ``imm[15]``.
+    This encoding describes an operation involving Rd, Rm and a 16-bit immediate 
+    value. The immediate is reconstructed as a sign-extended 32-bit value, with 
+    bits ``imm[31:16]`` set to ``imm[15]``.
 
 .. bitfield::
     :bits: 32
@@ -199,9 +200,10 @@ register (Rm) fields in the same position to simplify decoding.
         ]
 
 **R-Type**:
-    Describes an operation involving Rd, Rm and Rn. The register bank of
-    Rm is dictated by the bank field [2]_. The shift direction and amount is
-    encoded by ``sh`` and ``dir`` and is applied to Rn only.
+    This encoding describes an operation involving Rd, Rm and Rn. The bank field 
+    dictates the register bank of Rm [2]_. The fields ``sh`` and ``dir`` encodes 
+    the shift direction and amount. Shifting applies to Rn only. Further, the PC 
+    register can not be specified as Rn and results in an #UD exception.
 
 .. bitfield::
     :bits: 32
@@ -221,7 +223,7 @@ register (Rm) fields in the same position to simplify decoding.
 
 .. [2] Only applicable for selected instructions. Otherwise, the field is ignored.
 
-The fields of ``bank`` and ``sh`` are described in the table below.
+The table below describes the fields of ``bank`` and ``sh``.
 
 === =========================== ==== ===========================
 dir Description                 bank Description
@@ -232,10 +234,10 @@ dir Description                 bank Description
 11  Rotate right                11   Bank 3
 === =========================== ==== ===========================
 
-Reserved fields will result in undefined behaviour. Their values are unspecified
-and thus can be used to implement nonstandard extensions too the base ISA.
-In the standard HSC architecture implementing the HS32 rev2 ISA,
-reserved fields are ignored and will not generate an exception upon execution.
+Reserved fields result in undefined behaviour. Their values are unspecified and 
+thus, can be used to implement nonstandard extensions to the base ISA. In the 
+standard HSC Core implementing the HS32 rev2 ISA, reserved fields are ignored and 
+will not generate an exception upon execution.
 
 Instruction table
 -------------------------------------------------------------------------------
@@ -245,7 +247,6 @@ Instruction table
 .. flags: r, W/R, f, g, DD, B
 
 .. rst-class:: opcode-table
-
 =====   ======================= === =========== ========================
 Instr   Operation               Enc Opcode      Internal control signals
 =====   ======================= === =========== ========================
@@ -255,11 +256,11 @@ LDR_    Rd <- [imm]             I   TBD         ``mr -i- -------``
 STR_    [imm] <- Rd             I   TBD         ``ma -id -------``
 \       [Rm + imm] <- Rd        I   TBD         ``ma mid -------``
 \       [Rm + sh(Rn)] <- Rd     R   TBD         ``ma mnd ----DD-``
-MOVT    Rd.upper <- imm         I   TBD         ``ad -i- -------``
-MOV     Rd <- imm               I   TBD         ``ad -i- -------``
+MOV_    Rd <- imm               I   TBD         ``ad -i- -------``
 \       Rd <- sh(Rn)            R   TBD         ``ad -n- ----DD-``
 \       Rd <- Rm_b              R   TBD         ``ad mi- -R----B``
 \       Rd_b <- Rm              R   TBD         ``ad mi- -W----B``
+MOVT_   Rd.upper <- imm         I   TBD         ``ad -i- -------``
 ADD     Rd <- Rm + imm          I   TBD         ``ad mi- --f----``
 \       Rd <- Rm + sh(Rn)       R   TBD         ``ad mn- --f-DD-``
 ADDC    Rd <- Rm + imm + C      I   TBD         ``ad mi- --f----``
@@ -289,10 +290,10 @@ B<c>L   PC + Offset             I   TBD         ``ad -n- r--g---``
 INT     imm                     I   TBD         ``0``
 =====   ======================= === =========== ========================
 
-Interal control signal specification
--------------------------------------------------------------------------------
-
-TBD
+The above table describes all standard instructions part of the HS32 base ISA 
+specification. Note that the internal control signals are implementation-specific 
+and not part of the standard ISA specification. The control signals represent the 
+behaviour of each instruction and are documented in the :doc:`core` section.
 
 Instruction index
 -------------------------------------------------------------------------------
@@ -300,11 +301,53 @@ Instruction index
 LDR
 ~~~
 
+**Description of LDR/Load memory to register**
+    Will load 4 bytes from the address as specified by the operands into the 
+    destination register. Restrictions apply to the operand register Rn as 
+    described under `Encoding formats`_.
 
+**Variants**
+
+.. rst-class:: opcode-table
+===     ========================    ===========================================
+Op      Mnemonic                    Summary
+===     ========================    ===========================================
+TBD     LDR Rd <- [imm]             Load 4 bytes from address ``imm`` to Rd
+TBD     LDR Rd <- [Rm + imm]        Load 4 bytes from address ``Rm+imm`` to Rd
+TBD     LDR Rd <- [Rm + sh(Rn)]     Load 4 bytes from address ``Rm+sh(Rn)`` to Rd
+TBD     LDR Rd <- [Rm - sh(Rn)]     Load 4 bytes from address ``Rm-sh(Rn)`` to Rd
+===     ========================    ===========================================
+
+**Flags and exceptions**
+    Will not affect ALU flags. May throw an #AC exception if alignment checking is 
+    enabled and the address is not aligned to a 4-byte boundary.
 
 STR
 ~~~
 
+**Description of STR/Store register to memory**
+    Will store 4 bytes of the destination register to the memory address as 
+    specified by the operands. The same restrictions apply to Rn as in `LDR`_.
 
-.. opcode[7:5]
-.. opcode[0:0]: Set when R-Type
+**Variants**
+
+.. rst-class:: opcode-table
+===     ========================    ===========================================
+Op      Mnemonic                    Summary
+===     ========================    ===========================================
+TBD     STR [imm] <- Rd             Store 4 bytes in Rd to address ``imm``
+TBD     STR [Rm + imm] <- Rd        Store 4 bytes in Rd to address ``Rm+imm``
+TBD     STR [Rm + sh(Rn)] <- Rd     Store 4 bytes in Rd to address ``Rm+sh(Rn)``
+TBD     STR [Rm - sh(Rn)] <- Rd     Store 4 bytes in Rd to address ``Rm-sh(Rn)``
+===     ========================    ===========================================
+
+**Flags and exceptions**
+    Same as `LDR`_.
+
+MOVT
+~~~~
+
+
+
+MOV
+~~~
