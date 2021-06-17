@@ -71,6 +71,7 @@ latex_elements = {
     'preamble': R'''
         \protected\def\sphinxcrossref#1{#1}
         \renewcommand{\baselinestretch}{1.1}
+        \AtBeginDocument{\raggedright}
     ''',
     'fontpkg': R'''
         \usepackage{tgtermes}

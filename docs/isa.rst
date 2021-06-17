@@ -252,50 +252,47 @@ Instruction table
 .. flags: r, W/R, f, g, DD, B
 
 .. rst-class:: opcode-table
-=====   ======================= === =========== ========================
+======  ======================= === =========== ========================
 Instr   Operation               Enc Opcode      Internal control signals
-=====   ======================= === =========== ========================
-LDR_    Rd <- [imm]             I   TBD         ``mr -i- -------``
-\       Rd <- [Rm + imm]        I   TBD         ``mr mi- -------``
-\       Rd <- [Rm + sh(Rn)]     R   TBD         ``mr mn- ----DD-``
-\       Rd <- [Rm - sh(Rn)]     R   TBD         ``mr mn- ----DD-``
-STR_    [imm] <- Rd             I   TBD         ``ma -id -------``
-\       [Rm + imm] <- Rd        I   TBD         ``ma mid -------``
-\       [Rm + sh(Rn)] <- Rd     R   TBD         ``ma mnd ----DD-``
-\       [Rm - sh(Rn)] <- Rd     R   TBD         ``ma mnd ----DD-``
-MOV_    Rd <- imm               I   TBD         ``ad -i- -------``
-\       Rd <- sh(Rn)            R   TBD         ``ad -n- ----DD-``
-\       Rd <- Rm_b              R   TBD         ``ad mi- -R----B``
-\       Rd_b <- Rm              R   TBD         ``ad mi- -W----B``
-MOVT_   Rd.upper <- imm         I   TBD         ``ad -i- -------``
-ADD     Rd <- Rm + imm          I   TBD         ``ad mi- --f----``
-\       Rd <- Rm + sh(Rn)       R   TBD         ``ad mn- --f-DD-``
-ADDC    Rd <- Rm + imm + C      I   TBD         ``ad mi- --f----``
-\       Rd <- Rm + sh(Rn) + C   R   TBD         ``ad mn- --f-DD-``
-SUB     Rd <- Rm - imm          I   TBD         ``ad mi- --f----``
-\       Rd <- Rm - sh(Rn)       R   TBD         ``ad mn- --f-DD-``
-SUBC    Rd <- Rm - imm - C      I   TBD         ``ad mi- --f----``
-\       Rd <- Rm - sh(Rn) - C   R   TBD         ``ad mn- --f-DD-``
-RSUB    Rd <- imm - Rm          I   TBD         ``ad mi- r-f----``
-\       Rd <- sh(Rn) - Rm       R   TBD         ``ad mn- r-f-DD-``
-RSUBC   Rd <- imm - Rm - C      I   TBD         ``ad mi- r-f----``
-\       Rd <- sh(Rn) - Rm - C   R   TBD         ``ad mn- r-f-DD-``
-AND     Rd <- Rm & imm          I   TBD         ``ad mi- --f----``
-\       Rd <- Rm & sh(Rn)       R   TBD         ``ad mn- --f-DD-``
-BIC     Rd <- Rm & ~imm         I   TBD         ``ad mi- --f----``
-\       Rd <- Rm & sh(Rn)       R   TBD         ``ad mn- --f-DD-``
-OR      Rd <- Rm | imm          I   TBD         ``ad mi- --f----``
-\       Rd <- Rm | sh(Rn)       R   TBD         ``ad mn- --f-DD-``
-XOR     Rd <- Rm ^ imm          I   TBD         ``ad mi- --f----``
-\       Rd <- Rm ^ sh(Rn)       R   TBD         ``ad mn- --f-DD-``
-CMP     Rm - imm                I   TBD         ``-- mi- --f----``
-\       Rm - sh(Rn)             R   TBD         ``-- mn- --f-DD-``
-TST     Rm & imm                I   TBD         ``-- mi- --f----``
-\       Rm & sh(Rn)             R   TBD         ``-- mn- --f-DD-``
-B<c>    PC + Offset             I   TBD         ``-- -i- ---g---``
-B<c>L   PC + Offset             I   TBD         ``ad -n- r--g---``
-INT     imm                     I   TBD         ``0``
-=====   ======================= === =========== ========================
+======  ======================= === =========== ========================
+LDR_.x  Rd <- [Rm + imm]        I   00_00xx     ``mr mi- -------``
+\       Rd <- [Rm + sh(Rn)]     R   01_01xx     ``mr mn- ----DD-``
+STR_.x  [Rm + imm] <- Rd        I   00_10xx     ``ma mid -------``
+\       [Rm + sh(Rn)] <- Rd     R   01_11xx     ``ma mnd ----DD-``
+MOVT_   Rd.upper <- imm         I   00_0101     ``ad -i- -------``
+MOV_    Rd <- imm               I   00_0100     ``ad -i- -------``
+\       Rd <- sh(Rn)            R   01_0000     ``ad -n- ----DD-``
+\       Rd <- Rm_b              R   01_0001     ``ad mi- -R----B``
+\       Rd_b <- Rm              R   01_0010     ``ad mi- -W----B``
+SEXT    Rd <- sext(Rm),imm=0,1  I   00_0110     ``?``
+ADD     Rd <- Rm + imm          I   10_0000     ``ad mi- --f----``
+\       Rd <- Rm + sh(Rn)       R   11_0000     ``ad mn- --f-DD-``
+ADDC    Rd <- Rm + imm + C      I   10_0001     ``ad mi- --f----``
+\       Rd <- Rm + sh(Rn) + C   R   11_0001     ``ad mn- --f-DD-``
+SUB     Rd <- Rm - imm          I   10_0010     ``ad mi- --f----``
+\       Rd <- Rm - sh(Rn)       R   11_0010     ``ad mn- --f-DD-``
+SUBC    Rd <- Rm - imm - C      I   10_0011     ``ad mi- --f----``
+\       Rd <- Rm - sh(Rn) - C   R   11_0011     ``ad mn- --f-DD-``
+RSUB    Rd <- imm - Rm          I   10_1010     ``ad mi- r-f----``
+\       Rd <- sh(Rn) - Rm       R   11_1010     ``ad mn- r-f-DD-``
+RSUBC   Rd <- imm - Rm - C      I   10_1011     ``ad mi- r-f----``
+\       Rd <- sh(Rn) - Rm - C   R   11_1011     ``ad mn- r-f-DD-``
+AND     Rd <- Rm & imm          I   10_0100     ``ad mi- --f----``
+\       Rd <- Rm & sh(Rn)       R   11_0100     ``ad mn- --f-DD-``
+BIC     Rd <- Rm & ~imm         I   10_0101     ``ad mi- --f----``
+\       Rd <- Rm & sh(Rn)       R   11_0101     ``ad mn- --f-DD-``
+OR      Rd <- Rm | imm          I   10_0110     ``ad mi- --f----``
+\       Rd <- Rm | sh(Rn)       R   11_0110     ``ad mn- --f-DD-``
+XOR     Rd <- Rm ^ imm          I   10_0111     ``ad mi- --f----``
+\       Rd <- Rm ^ sh(Rn)       R   11_0111     ``ad mn- --f-DD-``
+CMP     Rm - imm                I   10_1000     ``-- mi- --f----``
+\       Rm - sh(Rn)             R   11_1000     ``-- mn- --f-DD-``
+TST     Rm & imm                I   10_1001     ``-- mi- --f----``
+\       Rm & sh(Rn)             R   11_1001     ``-- mn- --f-DD-``
+B<c>    PC + Offset             I   01_1001     ``-- -i- ---g---``
+B<c>L   PC + Offset             I   01_1001     ``ad -n- r--g---``
+INT     imm                     I   01_1000     ``?``
+======  ======================= === =========== ========================
 
 The above table describes all standard instructions part of the HS32 base ISA 
 specification. Note that the internal control signals are implementation-specific 
@@ -309,21 +306,19 @@ LDR
 ~~~
 
 **Description of LDR/Load memory to register**
-    Will load 4 bytes from the address as specified by the operands into the 
+    LDR.B/W/D will load 1/2/4 byte(s) from the address as specified by the operands into the 
     destination register. Restrictions apply to the operand register Rn as 
     described under `Encoding formats`_.
 
 **Variants**
 
 .. rst-class:: opcode-table
-===     ========================    ===========================================
+===     ==========================  ===========================================
 Op      Mnemonic                    Summary
-===     ========================    ===========================================
-TBD     LDR Rd <- [imm]             Load 4 bytes from address ``imm`` to Rd
-TBD     LDR Rd <- [Rm + imm]        Load 4 bytes from address ``Rm+imm`` to Rd
-TBD     LDR Rd <- [Rm + sh(Rn)]     Load 4 bytes from address ``Rm+sh(Rn)`` to Rd
-TBD     LDR Rd <- [Rm - sh(Rn)]     Load 4 bytes from address ``Rm-sh(Rn)`` to Rd
-===     ========================    ===========================================
+===     ==========================  ===========================================
+TBD     LDR.x Rd <- [Rm + imm]      Load 1/2/4 byte(s) from address ``Rm+imm`` to Rd
+TBD     LDR.x Rd <- [Rm + sh(Rn)]   Load 1/2/4 byte(s) from address ``Rm+sh(Rn)`` to Rd
+===     ==========================  ===========================================
 
 **Flags and exceptions**
     ALU flags are not modified. May throw an #AC exception if alignment checking is 
@@ -333,20 +328,18 @@ STR
 ~~~
 
 **Description of STR/Store register to memory**
-    Will store 4 bytes of the destination register to the memory address as 
+    STR.B/W/D will store 1/2/4 byte(s) of the destination register to the memory address as 
     specified by the operands. The same restrictions apply to Rn as in `LDR`_.
 
 **Variants**
 
 .. rst-class:: opcode-table
-===     ========================    ===========================================
+===     ==========================  ===========================================
 Op      Mnemonic                    Summary
-===     ========================    ===========================================
-TBD     STR [imm] <- Rd             Store 4 bytes in Rd to address ``imm``
-TBD     STR [Rm + imm] <- Rd        Store 4 bytes in Rd to address ``Rm+imm``
-TBD     STR [Rm + sh(Rn)] <- Rd     Store 4 bytes in Rd to address ``Rm+sh(Rn)``
-TBD     STR [Rm - sh(Rn)] <- Rd     Store 4 bytes in Rd to address ``Rm-sh(Rn)``
-===     ========================    ===========================================
+===     ==========================  ===========================================
+TBD     STR.x [Rm + imm] <- Rd      Store 1/2/4 byte(s) in Rd to address ``Rm+imm``
+TBD     STR.x [Rm + sh(Rn)] <- Rd   Store 1/2/4 byte(s) in Rd to address ``Rm+sh(Rn)``
+===     ==========================  ===========================================
 
 **Flags and exceptions**
     Same as `LDR`_.
